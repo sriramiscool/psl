@@ -21,18 +21,12 @@ import org.linqs.psl.config.ConfigBundle;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.util.MathUtils;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * TODO(steve): rewrite class documentation to describe general gradient-based learning algorithms
@@ -89,14 +83,14 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * objective gradient to compute a step.
 	 */
 	public static final String STEP_SIZE_KEY = CONFIG_PREFIX + ".stepsize";
-	public static final double STEP_SIZE_DEFAULT = 1.0;
+	public static final double STEP_SIZE_DEFAULT = 1;
 
 	/**
 	 * The inertia that is used for adaptive step sizes.
 	 * Should be in (0, 1).
 	 */
 	public static final String INERTIA_KEY = CONFIG_PREFIX + ".inertia";
-	public static final double INERTIA_DEFAULT = 0.50;
+	public static final double INERTIA_DEFAULT = 0.0;//0.50;
 
 	/**
 	 * Key for Boolean property that indicates whether to scale gradient by
@@ -110,7 +104,7 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 	 * weights together for final output.
 	 */
 	public static final String AVERAGE_STEPS_KEY = CONFIG_PREFIX + ".averagesteps";
-	public static final boolean AVERAGE_STEPS_DEFAULT = true;
+	public static final boolean AVERAGE_STEPS_DEFAULT = true;//true;
 
 	/**
 	 * Key for positive integer property. VotedPerceptron will take this many
@@ -173,52 +167,57 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 			throw new IllegalArgumentException("L1 regularization parameter must be non-negative.");
 		}
 
-		evaluator = (Evaluator)config.getNewObject(EVALUATOR_KEY, EVALUATOR_DEFAULT);
+	evaluator = (Evaluator)config.getNewObject(EVALUATOR_KEY, EVALUATOR_DEFAULT);
 
-		scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
-		averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
+	scaleGradient = config.getBoolean(SCALE_GRADIENT_KEY, SCALE_GRADIENT_DEFAULT);
+	averageSteps = config.getBoolean(AVERAGE_STEPS_KEY, AVERAGE_STEPS_DEFAULT);
 
-		currentLoss = Double.NaN;
-	}
+	currentLoss = Double.NaN;
+}
+
 
 	@Override
 	protected void doLearn() {
 		double[] avgWeights = new double[mutableRules.size()];
 
-		// Computes the observed incompatibilities.
-		computeObservedIncompatibility();
-
 		// Reset the RVAs to default values.
 		setDefaultRandomVariables();
+		computeObservedIncompatibility();
 
 		double[] scalingFactor = computeScalingFactor();
+		double sumOfWeights = 0;
 
 		// Keep track of the last steps for each weight so we can apply momentum.
 		double[] lastSteps = new double[mutableRules.size()];
+		double previousLoss = 0;
 
 		// Computes the gradient steps.
 		for (int step = 0; step < numSteps; step++) {
-			log.debug("Starting iteration {}", step);
-			currentLoss = Double.NaN;
-
+			log.info("Starting iteration {}", step);
+			boolean stopUpdate = true;
+			double diffExp = 0;
 			// Computes the expected incompatibility.
 			computeExpectedIncompatibility();
-
-			// Updates weights.
+			sumOfWeights = 0;
 			for (int i = 0; i < mutableRules.size(); i++) {
-				double newWeight = mutableRules.get(i).getWeight();
+				currentLoss = Double.NaN;
+
+
+				double newWeight = mutableRules.get(i).getWeight();//
 				double currentStep = (expectedIncompatibility[i] - observedIncompatibility[i]
 						- l2Regularization * newWeight
 						- l1Regularization) / scalingFactor[i];
 
-				currentStep *= baseStepSize;
+				currentStep *= baseStepSize/((step+1));
 
 				// Apply momentum.
 				currentStep += inertia * lastSteps[i];
 
 				// TEST
-            // newWeight = newWeight + currentStep;
-				newWeight = Math.max(0.0, newWeight + currentStep);
+				// newWeight = newWeight + currentStep;
+				newWeight = Math.max(0, newWeight + currentStep);
+				sumOfWeights += newWeight;
+				diffExp += (expectedIncompatibility[i] - observedIncompatibility[i]) * (expectedIncompatibility[i] - observedIncompatibility[i])/((scalingFactor[i])*(scalingFactor[i]));///scalingFactor[i];
 
 				log.trace("Gradient: {} (without momentun: {}), Expected Incomp.: {}, Observed Incomp.: {} -- ({}) {}",
 						currentStep, currentStep - (inertia * lastSteps[i]),
@@ -226,12 +225,16 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 						i, mutableRules.get(i));
 
 				mutableRules.get(i).setWeight(newWeight);
+				//if (Math.abs(expectedIncompatibility[i] - observedIncompatibility[i]) > 0.01) {
+					inMPEState = false;
+					inLatentMPEState = false;
+				//}
+
 				lastSteps[i] = currentStep;
 				avgWeights[i] += newWeight;
 			}
 
-			inMPEState = false;
-			inLatentMPEState = false;
+
 
 			if (log.isDebugEnabled()) {
 				getLoss();
@@ -246,18 +249,143 @@ public abstract class VotedPerceptron extends WeightLearningApplication {
 				objective = evaluator.getRepresentativeMetric();
 				objective = evaluator.isHigherRepresentativeBetter() ? -1.0 * objective : objective;
 			}
+			currentLoss = getLoss();
 
-			log.debug("Iteration {} complete. Likelihood: {}. Objective: {}", step, currentLoss, objective);
+			log.info("Iteration {} complete. Neg Gradient: {}. Metric: {}. Diff incompat: {}", step, currentLoss, objective, Math.sqrt(diffExp));
 			log.trace("Model {} ", mutableRules);
-		}
+			previousLoss = currentLoss;
 
+		}
 		// Sets the weights to their averages.
 		if (averageSteps) {
+			sumOfWeights = 0;
 			for (int i = 0; i < mutableRules.size(); i++) {
+				log.info("{}", mutableRules.get(i));
 				mutableRules.get(i).setWeight(avgWeights[i] / numSteps);
+				sumOfWeights += avgWeights[i] / numSteps;
 			}
 		}
+		//for (int i = 0; i < mutableRules.size(); i++) {
+		//	mutableRules.get(i).setWeight(mutableRules.get(i).getWeight()/sumOfWeights);
+		//}
 	}
+
+
+//	@Override
+//	protected void doLearn() {
+//		double[] avgWeights = new double[mutableRules.size()];
+//		int[] countAvg = new int[mutableRules.size()];
+//
+//		int[] countIncompatPrev = new int[mutableRules.size()];
+//
+//		// Computes the observed incompatibilities.
+//		computeObservedIncompatibility();
+//		Map<WeightedGroundRule, Double> ruleToObsIncompat = new HashMap<>();
+//		for (int i = 0; i < mutableRules.size(); i++) {
+//			for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
+//				ruleToObsIncompat.put(((WeightedGroundRule)groundRule),
+//						((WeightedGroundRule)groundRule).getIncompatibility());
+//			}
+//		}
+//
+//		// Reset the RVAs to default values.
+//		setDefaultRandomVariables();
+//
+//		double[] scalingFactor = computeScalingFactor();
+//
+//		// Keep track of the last steps for each weight so we can apply momentum.
+//		double[] lastSteps = new double[mutableRules.size()];
+//		double previousLoss = 0;
+//
+//		// Computes the gradient steps.
+//		for (int step = 0; step < numSteps; step++) {
+//			boolean stopUpdate = true;
+//			for (int i = 0; i < mutableRules.size(); i++) {
+//				log.info("Starting iteration {}", step);
+//				int countIncompat = 0;
+//				for (GroundRule groundRule : groundRuleStore.getGroundRules(mutableRules.get(i))) {
+//					currentLoss = Double.NaN;
+//
+//					// Computes the expected incompatibility.
+//					computeExpectedIncompatibility();
+//
+//					double newWeight, currentStep;
+//					// Updates weights.
+//					if (((WeightedGroundRule)groundRule).getIncompatibility() != ruleToObsIncompat.get(groundRule)) {
+//						countIncompat++;
+//						newWeight = mutableRules.get(i).getWeight();//
+//						currentStep = (((WeightedGroundRule)groundRule).getIncompatibility() - ruleToObsIncompat.get(groundRule)//(expectedIncompatibility[i] - observedIncompatibility[i]
+//								- l2Regularization * newWeight
+//								- l1Regularization) / scalingFactor[i];
+//
+//						currentStep *= baseStepSize/(step+1);
+//
+//						// Apply momentum.
+//						currentStep += inertia * lastSteps[i];
+//
+//						// TEST
+//						// newWeight = newWeight + currentStep;
+//						newWeight = Math.max(0.0, newWeight + currentStep);
+//
+//						log.info("Gradient: {} (without momentun: {}), Expected Incomp.: {}, Observed Incomp.: {} -- ({}) {}",
+//								currentStep, currentStep - (inertia * lastSteps[i]),
+//								expectedIncompatibility[i], observedIncompatibility[i],
+//								i, mutableRules.get(i));
+//
+//						mutableRules.get(i).setWeight(newWeight);
+//						if (Math.abs(expectedIncompatibility[i] - observedIncompatibility[i]) > 0.01) {
+//							inMPEState = false;
+//							inLatentMPEState = false;
+//						}
+//					} else {
+//						newWeight =  mutableRules.get(i).getWeight();
+//						currentStep = 0;
+//					}
+//					lastSteps[i] = currentStep;
+//					avgWeights[i] += newWeight;
+//					countAvg[i]++;
+//				}
+//
+//				log.info("Expected Incomp.: {}, Observed Incomp.: {} -- ({}) {}, Prev count incompat: {}, current incompat = {} ",
+//						expectedIncompatibility[i], observedIncompatibility[i],
+//						i, mutableRules.get(i), countIncompatPrev[i], countIncompat);
+//				stopUpdate  = stopUpdate && (countIncompatPrev[i] == countIncompat);
+//				countIncompatPrev[i] = countIncompat;
+//			}
+//
+//
+//			if (log.isDebugEnabled()) {
+//				getLoss();
+//			}
+//
+//			double objective = -1.0;
+//			if (log.isDebugEnabled() && evaluator != null) {
+//				// Compute the MPE state before evaluating so variables have assigned values.
+//				computeMPEState();
+//
+//				evaluator.compute(trainingMap);
+//				objective = evaluator.getRepresentativeMetric();
+//				objective = evaluator.isHigherRepresentativeBetter() ? -1.0 * objective : objective;
+//			}
+//			currentLoss = getLoss();
+//
+//			log.info("Iteration {} complete. Neg Gradient: {}. Metric: {}", step, currentLoss, objective);
+//			log.trace("Model {} ", mutableRules);
+//			previousLoss = currentLoss;
+//
+//			//if (stopUpdate) {
+//			//	log.info("Stopping as the number of ground rules not compatible is constant for all rules.");
+//			//	break;
+//			//}
+//		}
+//
+//		// Sets the weights to their averages.
+//		if (averageSteps) {
+//			for (int i = 0; i < mutableRules.size(); i++) {
+//				mutableRules.get(i).setWeight(avgWeights[i] / countAvg[i]);
+//			}
+//		}
+//	}
 
 	protected double computeRegularizer() {
 		if (l1Regularization == 0.0 && l2Regularization == 0.0) {

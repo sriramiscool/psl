@@ -120,8 +120,8 @@ public class ADMMTermStore implements TermStore<ADMMObjectiveTerm> {
 		for (Map.Entry<AtomFunctionVariable, Integer> entry : variableIndexes.entrySet()) {
 			for (LocalVariable local : localVariables.get(entry.getValue().intValue())) {
 				// TEST
-				// local.setValue((float)(entry.getKey().getValue()));
-				local.setValue((float)(Math.random()));
+                local.setValue((float)(entry.getKey().getValue()));
+				//local.setValue((float)(Math.random()));
 				local.setLagrange(0.0f);
 			}
 		}

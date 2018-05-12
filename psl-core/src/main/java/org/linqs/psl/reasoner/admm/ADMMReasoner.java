@@ -27,14 +27,12 @@ import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.LinearConstraintTerm;
 import org.linqs.psl.reasoner.admm.term.LocalVariable;
 import org.linqs.psl.reasoner.inspector.ReasonerInspector;
-import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Parallel;
-
-import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
@@ -58,7 +56,7 @@ public class ADMMReasoner extends Reasoner {
 	/**
 	 * Default value for MAX_ITER_KEY property
 	 */
-	public static final int MAX_ITER_DEFAULT = 25000;
+	public static final int MAX_ITER_DEFAULT = 50000;
 
 	/**
 	 * Key for non-negative float property. Controls step size. Higher
@@ -69,7 +67,7 @@ public class ADMMReasoner extends Reasoner {
 	/**
 	 * Default value for STEP_SIZE_KEY property
 	 */
-	public static final float STEP_SIZE_DEFAULT = 1.0f;
+	public static final float STEP_SIZE_DEFAULT = .1f;
 
 	/**
 	 * Key for positive float property. Absolute error component of stopping
@@ -128,6 +126,8 @@ public class ADMMReasoner extends Reasoner {
 	 */
 	private static final int BASE_BLOCK_STEP_SIZE = 2;
 
+	private static Random RANDOM = new Random();
+
 	/**
 	 * Sometimes called eta or rho,
 	 */
@@ -145,6 +145,7 @@ public class ADMMReasoner extends Reasoner {
 	private float augmentedLagrangePenalty;
 
 	private int maxIter;
+	private boolean firstTimeOptimize;
 
 	private volatile int termBlockSize;
 	private volatile int variableBlockSize;
@@ -156,8 +157,11 @@ public class ADMMReasoner extends Reasoner {
 	public ADMMReasoner(ConfigBundle config) {
 		super(config);
 
+		RANDOM.setSeed(10L);
+
 		maxIter = config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		stepSize = config.getFloat(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
+		firstTimeOptimize = true;
 
 		epsilonAbs = config.getFloat(EPSILON_ABS_KEY, EPSILON_ABS_DEFAULT);
 		if (epsilonAbs <= 0) {
@@ -235,7 +239,7 @@ public class ADMMReasoner extends Reasoner {
 		ADMMTermStore termStore = (ADMMTermStore)baseTermStore;
 
 		// TEST
-		termStore.resetLocalVairables();
+		//termStore.resetLocalVairables();
 
 		int numTerms = termStore.size();
 		int numVariables = termStore.getNumGlobalVariables();
@@ -243,12 +247,16 @@ public class ADMMReasoner extends Reasoner {
 		log.debug("Performing optimization with {} variables and {} terms.", numVariables, numTerms);
 
 		// Also sometimes called 'z'.
-		consensusValues = new float[termStore.getNumGlobalVariables()];
+		if (firstTimeOptimize) {
+			consensusValues = new float[termStore.getNumGlobalVariables()];
 
-		// TEST
-		for (int i = 0; i < consensusValues.length; i++) {
-			consensusValues[i] = (float)Math.random();
+			// TEST
+			for (int i = 0; i < consensusValues.length; i++) {
+				consensusValues[i] = 0;//RANDOM.nextFloat();
+			}
 		}
+		//termStore.updateVariables(consensusValues);
+		//firstTimeOptimize = false;
 
 		// Compute the initial block size by assuming we want each thread to do TERM_ITERATIONS iterations (on terms).
 		termBlockSize = Math.max(MIN_BLOCK_SIZE, (int)((double)numTerms / numThreads / TERM_ITERATIONS));
