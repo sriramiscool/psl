@@ -26,7 +26,7 @@ public class Grafting extends VotedPerceptron{
         this(model.getRules(), rvDB, observedDB, false);
     }
 
-    public void learn() {
+    public void doLearn() {
         for (int i = 0; i < mutableRules.size(); i++) {
             mutableRules.get(i).setWeight(0);
         }
@@ -49,7 +49,7 @@ public class Grafting extends VotedPerceptron{
             double norm = 0.0;
 
             WeightedRule ruleToAdd = null;
-            double maxGrad = Double.MIN_VALUE;
+            double maxGrad = 0;
             // Updates weights.
             for (int i = 0; i < mutableRules.size(); i++) {
                 double currentStep = (expectedIncompatibility[i] - observedIncompatibility[i]
@@ -79,11 +79,11 @@ public class Grafting extends VotedPerceptron{
                     }
                 }
             }
-            if (maxGrad <= 0){
-                break;
+            if (maxGrad > 0){
+                ruleToAdd.setWeight(maxGrad);
+                log.debug("Rule added : {} at iteration: {}",ruleToAdd.toString(), step);
+                //break;
             }
-            ruleToAdd.setWeight(maxGrad);
-            log.trace("Rule added : {} at iteration: {}",ruleToAdd.toString(), step);
 
             inMPEState = false;
             inLatentMPEState = false;
@@ -95,7 +95,13 @@ public class Grafting extends VotedPerceptron{
             }
 
             log.debug("Iteration {} complete. Likelihood: {}. Icomp. L2-norm: {}", step, computeLoss(), norm);
-            log.trace("Model {} ", mutableRules);
+            if (log.isDebugEnabled()) {
+                for (int i = 0; i < this.mutableRules.size(); i++) {
+                    if (this.mutableRules.get(i).getWeight() > 0) {
+                        log.debug("Model {} ", mutableRules.get(i));
+                    }
+                }
+            }
         }
         List<WeightedRule> removeTheseRules = new ArrayList<>();
         for (int i = 0; i < mutableRules.size(); i++) {
