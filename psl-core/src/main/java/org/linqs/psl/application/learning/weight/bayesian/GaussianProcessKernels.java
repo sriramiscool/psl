@@ -8,9 +8,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Created by sriramsrinivasan on 6/27/18.
- */
+
 public class GaussianProcessKernels {
 
     public static Set<String> KERNELS;
@@ -23,7 +21,7 @@ public class GaussianProcessKernels {
     private static float SCALE = 1.0f;
     //Smaller means longer dependence. Smaller better when number of rules large
     // FUTURE WORK: TODO: learn this from data.
-    private static float REL_DEP = 0.01f;
+    private static float REL_DEP = 1.0f;
 
     enum Spaces {
         SS, OS, LS

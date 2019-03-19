@@ -17,9 +17,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 
-/**
- * Created by sriramsrinivasan on 6/28/18.
- */
+
 public class GaussianProcessPriorTest extends WeightLearningTest {
     @Override
     protected WeightLearningApplication getWLA() {

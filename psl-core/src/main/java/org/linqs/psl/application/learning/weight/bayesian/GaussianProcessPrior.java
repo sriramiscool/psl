@@ -4,6 +4,8 @@ import org.apache.commons.lang.ArrayUtils;
 import org.jblas.FloatMatrix;
 import org.jblas.Solve;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
+import org.linqs.psl.application.learning.weight.bayesian.AcquisitionFunctions.AcquisitionFunction;
+import org.linqs.psl.application.learning.weight.bayesian.AcquisitionFunctions.AcquisitionFunctionsStore;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.Model;
@@ -17,9 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Created by sriramsrinivasan on 6/22/18.
- */
+
 public class GaussianProcessPrior extends WeightLearningApplication {
 
     private static final Logger log = LoggerFactory.getLogger(GaussianProcessPrior.class);
@@ -35,6 +35,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private static final String RANDOM_CONFIGS_ONLY = ".randomConfigsOnly";
     private static final int MAX_RAND_INT_VAL = 100000000;
     private static final String EARLY_STOPPING = ".earlyStopping";
+    private static final String ACQUISITION_FUNCTION = ".acqFun";
     private boolean earlyStopping;
     private String kernel_name;
     private FloatMatrix knownDataStdInv;
@@ -47,6 +48,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
     private List<WeightConfig> exploredConfigs;
     private FloatMatrix blasYKnown;
     private float minConfigVal;
+    private AcquisitionFunction acquisitionFunction;
 
     public GaussianProcessPrior(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB, false);
@@ -56,7 +58,9 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         }
         maxIterNum = Config.getInt(CONFIG_PREFIX+NUM_ITER, MAX_NUM_ITER);
         maxConfigs = Config.getInt(CONFIG_PREFIX+MAX_CONFIGS_STR, MAX_CONFIGS);
-        exploration = Config.getFloat(CONFIG_PREFIX+EXPLORATION, EXPLORATION_VAL);
+        //exploration = Config.getFloat(CONFIG_PREFIX+EXPLORATION, EXPLORATION_VAL);
+        acquisitionFunction = AcquisitionFunctionsStore.getAcquisitionFunction(
+                Config.getString(CONFIG_PREFIX+ACQUISITION_FUNCTION, "UCB").toUpperCase());
         randomConfigsOnly = Config.getBoolean(CONFIG_PREFIX+RANDOM_CONFIGS_ONLY, true);
         earlyStopping = Config.getBoolean(EARLY_STOPPING, true);
         minConfigVal = 1/(float)MAX_RAND_INT_VAL;
@@ -82,7 +86,7 @@ public class GaussianProcessPrior extends WeightLearningApplication {
         float bestVal = -Float.MAX_VALUE;
         boolean allStdSmall = true;
         do{
-            int nextPoint = getNextPoint(configs, iter);
+            int nextPoint = acquisitionFunction.getNextPoint(configs, iter);
             WeightConfig config = configs.get(nextPoint);
             exploredConfigs.add(config);
             configs.remove(nextPoint);
@@ -123,21 +127,21 @@ public class GaussianProcessPrior extends WeightLearningApplication {
             if (earlyStopping && allStdSmall){
                 break;
             }
+
+            double avg_all_std = 0.0;
+            double untouched = 0;
+            for (int i = 0; i < configs.size(); i++) {
+                avg_all_std += configs.get(i).valueAndStd.std;
+                untouched += configs.get(i).valueAndStd.std == 1.0 ? 1 : 0;
+            }
+            avg_all_std /= configs.size();
+            untouched /= configs.size();
+            log.info("Number of configs explored: " + exploredConfigs.size() + ", Exploration Quality: "+avg_all_std);
+            log.info("Number of configs explored: " + exploredConfigs.size() + ", Untouched Area: "+untouched);
         }while((iter < maxIterNum && configs.size() > 0));
         setWeights(bestConfig);
         log.info("Total number of iterations completed: " + iter + ", Early stopping: " + allStdSmall);
         log.info("Best config: " + bestConfig);
-//        try{
-//            BufferedWriter writer = new BufferedWriter(new FileWriter("/Users/sriramsrinivasan/Documents/gpp_weight_learning_psl/srinivasan-aaai19b/randomRes/expanded_space_10lr.txt"));
-//            for (WeightConfig c: exploredConfigs) {
-//                writer.write(c.config[0]+","+c.config[1]+","+c.valueAndStd.value+","+c.valueAndStd.std+"\n");
-//            }
-//            for (WeightConfig c: configs){
-//                writer.write(c.config[0]+","+c.config[1]+","+c.valueAndStd.value+","+c.valueAndStd.std+"\n");
-//            }
-//        } catch (IOException e){
-//            System.exit(1);
-//        }
 
     }
 
@@ -259,6 +263,7 @@ def predict(x, data, kernel, params, sigma, t):
         return (float)score;
     }
 
+    /*
     //Exploration strategy
     protected int getNextPoint(List<WeightConfig> configs, int iter){
         int bestConfig = -1;
@@ -273,10 +278,11 @@ def predict(x, data, kernel, params, sigma, t):
         }
         return bestConfig;
     }
+    */
 
-    static class ValueAndStd{
-        float value;
-        float std;
+    public static class ValueAndStd{
+        public float value;
+        public float std;
         ValueAndStd(){
             this(0,1);
         }
@@ -286,10 +292,10 @@ def predict(x, data, kernel, params, sigma, t):
         }
     }
 
-    static class WeightConfig {
+    public static class WeightConfig {
         float [] config;
 
-        ValueAndStd valueAndStd;
+        public ValueAndStd valueAndStd;
 
         WeightConfig(float[] config){
             this(config, 0, 1);

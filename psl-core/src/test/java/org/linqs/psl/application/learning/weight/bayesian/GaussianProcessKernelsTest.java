@@ -4,9 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.linqs.psl.config.Config;
 
-/**
- * Created by sriramsrinivasan on 6/27/18.
- */
+
 public class GaussianProcessKernelsTest {
     @Test
     public void testSquaredExpKernel(){
