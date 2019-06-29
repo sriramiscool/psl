@@ -20,17 +20,22 @@ public class EI implements AcquisitionFunction {
     //Exploration strategy
     public int getNextPoint(List<GaussianProcessPrior.WeightConfig> configs, int iter){
         int bestConfig = -1;
+        float max_so_far = 0;
         float curBestVal = -Float.MAX_VALUE;
         for (int i = 0; i < configs.size(); i++) {
             final float expec = configs.get(i).valueAndStd.value - exploration;
             final float std = configs.get(i).valueAndStd.std;
             final float x = expec / std;
             float curVal = expec*DistUtils.CNDF(x) + std*DistUtils.NDF(x);
+            if (max_so_far < configs.get(i).valueAndStd.value){
+                max_so_far = configs.get(i).valueAndStd.value;
+            }
             if(curBestVal < curVal){
                 curBestVal = curVal;
                 bestConfig = i;
             }
         }
+        exploration = max_so_far;
         return bestConfig;
     }
 }

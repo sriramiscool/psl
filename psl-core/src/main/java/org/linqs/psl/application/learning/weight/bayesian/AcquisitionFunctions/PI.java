@@ -21,14 +21,19 @@ public class PI implements AcquisitionFunction {
     public int getNextPoint(List<GaussianProcessPrior.WeightConfig> configs, int iter){
         int bestConfig = -1;
         float curBestVal = -Float.MAX_VALUE;
+        float max_so_far = 0;
         for (int i = 0; i < configs.size(); i++) {
             float curVal = DistUtils.CNDF((configs.get(i).valueAndStd.value - exploration) /
                     configs.get(i).valueAndStd.std);
+            if (max_so_far < configs.get(i).valueAndStd.value){
+                max_so_far = configs.get(i).valueAndStd.value;
+            }
             if(curBestVal < curVal){
                 curBestVal = curVal;
                 bestConfig = i;
             }
         }
+        exploration = max_so_far;
         return bestConfig;
     }
 }
