@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.marginals.term;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.term.WeightedTerm;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -55,6 +56,12 @@ public abstract class SquaredHyperplaneTerm extends MarginalObjectiveTerm implem
 	public float getWeight() {
 		return weight;
 	}
+
+	@Override
+	public float getConstant() { return constant; }
+
+	@Override
+	public List<Float> getCoeffs() { return Collections.unmodifiableList(coeffs); }
 
 	/**
 	 * coeffs^T * x - constant

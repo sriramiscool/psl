@@ -41,4 +41,24 @@ public abstract class MarginalObjectiveTerm implements Term {
 	public List<AtomFunctionVariable> getVariables() {
 		return new UnmodifiableList<AtomFunctionVariable>(variables);
 	}
+
+	public abstract float getWeight() ;
+
+	public abstract List<Float> getCoeffs() ;
+
+	public  abstract float getConstant() ;
+
+	@Override
+	public  String toString(){
+		String varsStr = "";
+		String coeffsStr = "";
+		List<AtomFunctionVariable> vars = getVariables();
+		List<Float> coeffs = getCoeffs();
+		for (int i = 0; i < vars.size(); i++) {
+			coeffsStr += coeffs.get(i).toString() + ", ";
+			varsStr += vars.get(i).toString() + ", ";
+		}
+		String constant = Float.toString(getConstant());
+		return "Vars: " + varsStr + "coeffs: " + coeffsStr + "constant: " + constant;
+	}
 }

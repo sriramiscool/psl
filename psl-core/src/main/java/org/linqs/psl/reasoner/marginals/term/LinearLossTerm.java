@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.marginals.term;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.term.WeightedTerm;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -51,6 +52,12 @@ public class LinearLossTerm extends MarginalObjectiveTerm implements WeightedTer
 	public float getWeight() {
 		return weight;
 	}
+	
+	@Override
+	public float getConstant() { return 0; }
+
+	@Override
+	public List<Float> getCoeffs() { return Collections.unmodifiableList(coeffs); }
 
 	/**
 	 * weight * coeffs^T * x

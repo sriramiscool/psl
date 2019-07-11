@@ -64,6 +64,14 @@ public final class RandUtils {
 		return rng.nextFloat();
 	}
 
+	public static synchronized float nextFloat(float min, float max) {
+		ensureRNG();
+		if (min > max) {
+			throw new RuntimeException("Min (" + min + ") greater than Max (" + max + ").");
+		}
+		return rng.nextFloat() * (max-min) + min;
+	}
+
 	public static synchronized double nextGaussian() {
 		ensureRNG();
 		return rng.nextGaussian();

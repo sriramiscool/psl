@@ -19,7 +19,7 @@ package org.linqs.psl.reasoner.marginals.term;
 
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -32,10 +32,7 @@ import java.util.List;
  */
 public abstract class HyperplaneTerm extends MarginalObjectiveTerm {
 	protected final List<Float> coeffs;
-	protected final List<Float> unitNormal;
 	protected final float constant;
-	// Only allocate once.
-	protected final float[] point;
 
 	HyperplaneTerm(List<AtomFunctionVariable> variables, List<Float> coeffs, float constant) {
 		super(variables);
@@ -44,28 +41,13 @@ public abstract class HyperplaneTerm extends MarginalObjectiveTerm {
 
 		this.coeffs = coeffs;
 		this.constant = constant;
-		this.point = new float[variables.size()];
-
-		if (variables.size() >= 3) {
-			/*
-			 * Finds a unit vector normal to the hyperplane and a point in the
-			 * hyperplane for future projections
-			 */
-			float length = 0.0f;
-			for (Float coeff : coeffs) {
-				length += coeff.floatValue() * coeff.floatValue();
-			}
-			length = (float)Math.sqrt(length);
-
-			unitNormal = new ArrayList<Float>(coeffs.size());
-			for (Float coeff : coeffs) {
-				unitNormal.add(coeff.floatValue() / length);
-			}
-		} else {
-			unitNormal = null;
-		}
 	}
 
+	@Override
+	public float getConstant() { return constant; }
+
+	@Override
+	public List<Float> getCoeffs() { return Collections.unmodifiableList(coeffs); }
 	/**
 	 * coeffs^T * x - constant
 	 */
