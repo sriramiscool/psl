@@ -38,7 +38,7 @@ public final class Parallel {
 	public static final String CONFIG_PREFIX = "parallel";
 
 	public static final String NUM_THREADS_KEY = CONFIG_PREFIX + ".numthreads";
-	public static final int NUM_THREADS_DEFAULT = 1;//Runtime.getRuntime().availableProcessors();
+	public static final int NUM_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
 
 	private static boolean initialized = false;
 
