@@ -30,8 +30,9 @@ import java.util.List;
  */
 public class HingeLossTerm extends DCDObjectiveTerm implements WeightedTerm {
 
-	HingeLossTerm(List<AtomFunctionVariable> variables, List<Float> coeffs, float constant, float weight) {
-		super(variables, coeffs, constant, weight);
+	HingeLossTerm(List<AtomFunctionVariable> variables, List<Float> coeffs,
+				  float constant, float weight, float c) {
+		super(variables, coeffs, constant, weight, c);
 	}
 
 	@Override

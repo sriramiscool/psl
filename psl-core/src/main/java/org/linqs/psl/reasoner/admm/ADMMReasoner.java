@@ -74,6 +74,9 @@ public class ADMMReasoner implements Reasoner {
 	public static final String OBJECTIVE_BREAK_KEY = CONFIG_PREFIX + ".objectivebreak";
 	public static final boolean OBJECTIVE_BREAK_DEFAULT = true;
 
+	public static final String PRINT_OBJ = CONFIG_PREFIX + ".printobj";
+	public static final boolean PRINT_OBJ_DEFAULT = true;
+
 	/**
 	 * Possible starting values for the consensus values.
 	 *  - ZERO - 0.
@@ -124,7 +127,7 @@ public class ADMMReasoner implements Reasoner {
 	private float augmentedLagrangePenalty;
 
 	private int maxIter;
-
+	private boolean printObj;
 	// Also sometimes called 'z'.
 	// Only populated after inference.
 	private float[] consensusValues;
@@ -137,6 +140,7 @@ public class ADMMReasoner implements Reasoner {
 		maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		stepSize = Config.getFloat(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
 		objectiveBreak = Config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
+		printObj = Config.getBoolean(PRINT_OBJ, PRINT_OBJ_DEFAULT);
 
 		epsilonAbs = Config.getFloat(EPSILON_ABS_KEY, EPSILON_ABS_DEFAULT);
 		if (epsilonAbs <= 0) {
@@ -219,8 +223,12 @@ public class ADMMReasoner implements Reasoner {
 		float oldObjective = 0.0f;
 
 		int iteration = 1;
-		log.info("Iteration:, {}, Time(ms): {}, Objective: {}",
-				iteration-1, 0, computeObjective(termStore));
+		if (printObj) {
+			log.info("Iterations, Time(ms), Objective");
+			log.info("grepThis:{},{},{}",
+					iteration - 1, 0, computeObjective(termStore));
+		}
+		float time = 0;
 		while (
 				(iteration == 1 || primalRes > epsilonPrimal || dualRes > epsilonDual)
 				&& (objectiveBreak && (MathUtils.isZero(oldObjective) || !MathUtils.equals(objective, oldObjective)))
@@ -233,16 +241,19 @@ public class ADMMReasoner implements Reasoner {
 			BzNorm = 0.0f;
 			lagrangePenalty = 0.0f;
 			augmentedLagrangePenalty = 0.0f;
-			float start = System.currentTimeMillis();
+			long start = System.currentTimeMillis();
 
 			// Minimize all the terms.
 			Parallel.count(numTermBlocks, new TermWorker(termStore, termBlockSize));
 
 			// Compute new consensus values and residuals.
 			Parallel.count(numVariableBlocks, new VariableWorker(termStore, variableBlockSize));
-			float end = System.currentTimeMillis();
-			log.info("Iteration:, {}, Time(ms): {}, Objective: {}",
-					iteration-1, end-start, computeObjective(termStore));
+			long end = System.currentTimeMillis();
+			time += end - start;
+			if (printObj) {
+				log.info("grepThis:{},{},{}",
+						iteration - 1, time, computeObjective(termStore));
+			}
 
 			primalRes = (float)Math.sqrt(primalRes);
 			dualRes = (float)(stepSize * Math.sqrt(dualRes));

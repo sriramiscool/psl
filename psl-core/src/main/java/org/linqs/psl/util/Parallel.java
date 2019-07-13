@@ -18,22 +18,14 @@
 package org.linqs.psl.util;
 
 import org.linqs.psl.config.Config;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Utilities to run operations in parallel.
@@ -46,7 +38,7 @@ public final class Parallel {
 	public static final String CONFIG_PREFIX = "parallel";
 
 	public static final String NUM_THREADS_KEY = CONFIG_PREFIX + ".numthreads";
-	public static final int NUM_THREADS_DEFAULT = Runtime.getRuntime().availableProcessors();
+	public static final int NUM_THREADS_DEFAULT = 1;//Runtime.getRuntime().availableProcessors();
 
 	private static boolean initialized = false;
 

@@ -28,8 +28,9 @@ import java.util.List;
  */
 public class SquaredHingeLossTerm extends DCDObjectiveTerm implements WeightedTerm {
 
-	public SquaredHingeLossTerm(List<AtomFunctionVariable> variables, List<Float> coeffs, float constant, float weight) {
-		super(variables, coeffs, constant, weight);
+	public SquaredHingeLossTerm(List<AtomFunctionVariable> variables, List<Float> coeffs,
+								float constant, float weight, float c) {
+		super(variables, coeffs, constant, weight, c);
 	}
 
 	/**

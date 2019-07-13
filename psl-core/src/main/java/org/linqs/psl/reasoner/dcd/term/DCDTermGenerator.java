@@ -23,6 +23,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.reasoner.dcd.DCDReasoner;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
@@ -54,9 +55,11 @@ public class DCDTermGenerator implements TermGenerator<DCDObjectiveTerm> {
 	public static final boolean INVERT_NEGATIVE_WEIGHTS_DEFAULT = false;
 
 	private boolean invertNegativeWeight;
+	private float c;
 
 	public DCDTermGenerator() {
 		invertNegativeWeight = Config.getBoolean(INVERT_NEGATIVE_WEIGHTS_KEY, INVERT_NEGATIVE_WEIGHTS_DEFAULT);
+		c = Config.getFloat(DCDReasoner.C, DCDReasoner.C_DEFAULT);
 	}
 
 	@Override
@@ -142,18 +145,18 @@ public class DCDTermGenerator implements TermGenerator<DCDObjectiveTerm> {
 
 			// Non-negative functions have a hinge.
 			if (function.isNonNegative() && function.isSquared()) {
-				term = new SquaredHingeLossTerm(hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight);
+				term = new SquaredHingeLossTerm(hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight, c);
 			} else if (function.isNonNegative() && !function.isSquared()) {
-				term = new HingeLossTerm(hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight);
+				term = new HingeLossTerm(hyperplane.variables, hyperplane.coeffs, hyperplane.constant, weight, c);
 			} else if (!function.isNonNegative() && function.isSquared()) {
-				throw new UnsupportedOperationException("DCD does not support squared linear terms.");
+				throw new UnsupportedOperationException("DCD does not support squared linear terms: " + groundRule);
 				//term = new SquaredLinearLossTerm(hyperplane.variables, hyperplane.coeffs, 0.0f, weight);
 			} else {
-				throw new UnsupportedOperationException("DCD does not support linear terms.");
+				throw new UnsupportedOperationException("DCD does not support linear terms." + groundRule);
 				//term = new LinearLossTerm(hyperplane.variables, hyperplane.coeffs, weight);
 			}
 		} else if (groundRule instanceof UnweightedGroundRule) {
-			throw new UnsupportedOperationException("DCD does not support hard constraints.");
+			throw new UnsupportedOperationException("DCD does not support hard constraints." + groundRule);
 		} else {
 			throw new IllegalArgumentException("Unsupported ground rule: " + groundRule);
 		}

@@ -41,7 +41,7 @@ public class DCDReasoner implements Reasoner {
 	 * The maximum number of iterations of ADMM to perform in a round of inference.
 	 */
 	public static final String MAX_ITER_KEY = CONFIG_PREFIX + ".maxiterations";
-	public static final int MAX_ITER_DEFAULT = 25000;
+	public static final int MAX_ITER_DEFAULT = 200;
 
 	/**
 	 * Stop if the objective has not changed since the last logging period (see LOG_PERIOD).
@@ -53,9 +53,11 @@ public class DCDReasoner implements Reasoner {
 	 * The maximum number of iterations of ADMM to perform in a round of inference.
 	 */
 	public static final String OBJ_TOL = CONFIG_PREFIX + ".tol";
-	public static final float OBJ_TOL_DEFAULT = 0.0001f;
+	public static final float OBJ_TOL_DEFAULT = 0.000001f;
 
 
+	public static final String C = CONFIG_PREFIX + ".C";
+	public static final float C_DEFAULT = 10f;
 	/**
 	 * Possible starting values for the consensus values.
 	 *  - ZERO - 0.
@@ -73,19 +75,18 @@ public class DCDReasoner implements Reasoner {
 
 	private int maxIter;
 
-	// Also sometimes called 'z'.
-	// Only populated after inference.
-	private float[] consensusValues;
 
 	private float tol;
 	private boolean printObj;
 	private boolean objectiveBreak;
+	private float c;
 
 	public DCDReasoner() {
 		maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		objectiveBreak = Config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
 		printObj = Config.getBoolean(PRINT_OBJECTIVE, PRINT_OBJECTIVE_DEFAULT);
 		tol = Config.getFloat(OBJ_TOL, OBJ_TOL_DEFAULT);
+		c = Config.getFloat(C, C_DEFAULT);
 	}
 
 	public int getMaxIter() {
@@ -111,25 +112,29 @@ public class DCDReasoner implements Reasoner {
 		log.debug("Performing optimization with {} variables and {} terms.", numVariables, numTerms);
 
 
-		float objective = 0;
-		float oldObjective = computeObjective(termStore);
+		float objective = computeObjective(termStore);
+		float oldObjective = Float.POSITIVE_INFINITY;
 
 		int iteration = 1;
 		if (printObj){
-			log.info("Iteration:, {}, Time(ms): {}, Objective: {}",
-					iteration-1, 0, oldObjective);
+			log.info("Iterations, Time(ms), Objective");
+			log.info("grepThis:{},{},{}",
+					iteration-1, 0, objective);
 		}
+		float time = 0;
 		while ((objectiveBreak && MathUtils.compare(objective, oldObjective, tol) != 0)
 				&& iteration <= maxIter) {
-			float start = System.currentTimeMillis();
+			long start = System.currentTimeMillis();
 			for (DCDObjectiveTerm term: termStore){
 				term.minimize();
 			}
+			long end = System.currentTimeMillis();
+			oldObjective = objective;
 			objective = computeObjective(termStore);
-			float end = System.currentTimeMillis();
+			time += end - start;
 			if (printObj){
-				log.info("Iteration:, {}, Time(ms): {}, Objective: {}",
-						iteration-1, end-start, objective);
+				log.info("grepThis:{},{},{}",
+						iteration, time, objective);
 			}
 			iteration++;
 		}
@@ -137,15 +142,13 @@ public class DCDReasoner implements Reasoner {
 		log.info("Optimization completed in {} iterations. Objective.: {}",
 				iteration - 1, objective);
 
-		// Updates variables
-		termStore.updateVariables(consensusValues);
 	}
 
 	public float computeObjective(DCDTermStore termStore){
 		float obj = 0;
 		int nTerms = 0;
 		for (DCDObjectiveTerm term : termStore){
-			obj += term.evaluate();
+			obj += term.evaluate()/c;
 			nTerms++;
 		}
 		return obj/nTerms;

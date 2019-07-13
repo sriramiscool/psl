@@ -37,13 +37,14 @@ public abstract class DCDObjectiveTerm implements WeightedTerm  {
 	/**
 	 * Caller releases control of |variables|.
 	 */
-	public DCDObjectiveTerm(List<AtomFunctionVariable> variables, List<Float> coeffs, float constant, float weight) {
+	public DCDObjectiveTerm(List<AtomFunctionVariable> variables, List<Float> coeffs,
+							float constant, float weight, float c) {
 		this.variables = variables;
 		assert(variables.size() == coeffs.size());
 
 		this.coeffs = coeffs;
 		this.constant = constant;
-		this.weight = weight;
+		this.weight = weight*c;
 		this.lagrangeVar = 0;
 		float qii = 0f;
 		for (int i = 0; i < coeffs.size(); i++) {
@@ -54,6 +55,9 @@ public abstract class DCDObjectiveTerm implements WeightedTerm  {
 
 	public void reset() {
 		this.lagrangeVar = 0;
+		for (int i = 0; i < variables.size(); i++) {
+			variables.get(i).setValue(0);
+		}
 	}
 
 	@Override
