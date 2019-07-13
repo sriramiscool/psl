@@ -21,16 +21,11 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
-import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
-import org.linqs.psl.reasoner.admm.term.LinearConstraintTerm;
-import org.linqs.psl.reasoner.admm.term.LocalVariable;
-import org.linqs.psl.reasoner.term.TermGenerator;
+import org.linqs.psl.reasoner.admm.term.*;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.RandUtils;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -224,6 +219,8 @@ public class ADMMReasoner implements Reasoner {
 		float oldObjective = 0.0f;
 
 		int iteration = 1;
+		log.info("Iteration:, {}, Time(ms): {}, Objective: {}",
+				iteration-1, 0, computeObjective(termStore));
 		while (
 				(iteration == 1 || primalRes > epsilonPrimal || dualRes > epsilonDual)
 				&& (objectiveBreak && (MathUtils.isZero(oldObjective) || !MathUtils.equals(objective, oldObjective)))
@@ -236,12 +233,16 @@ public class ADMMReasoner implements Reasoner {
 			BzNorm = 0.0f;
 			lagrangePenalty = 0.0f;
 			augmentedLagrangePenalty = 0.0f;
+			float start = System.currentTimeMillis();
 
 			// Minimize all the terms.
 			Parallel.count(numTermBlocks, new TermWorker(termStore, termBlockSize));
 
 			// Compute new consensus values and residuals.
 			Parallel.count(numVariableBlocks, new VariableWorker(termStore, variableBlockSize));
+			float end = System.currentTimeMillis();
+			log.info("Iteration:, {}, Time(ms): {}, Objective: {}",
+					iteration-1, end-start, computeObjective(termStore));
 
 			primalRes = (float)Math.sqrt(primalRes);
 			dualRes = (float)(stepSize * Math.sqrt(dualRes));
@@ -286,6 +287,17 @@ public class ADMMReasoner implements Reasoner {
 
 		// Updates variables
 		termStore.updateVariables(consensusValues);
+	}
+
+
+	public float computeObjective(ADMMTermStore termStore){
+		float obj = 0;
+		int nTerms = 0;
+		for (ADMMObjectiveTerm term : termStore){
+			obj += term.evaluate();
+			nTerms++;
+		}
+		return obj/nTerms;
 	}
 
 	@Override
