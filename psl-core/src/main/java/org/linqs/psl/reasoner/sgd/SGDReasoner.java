@@ -79,14 +79,12 @@ public class SGDReasoner implements Reasoner {
 	private float tol;
 	private boolean printObj;
 	private boolean objectiveBreak;
-	private float c;
 
 	public SGDReasoner() {
 		maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
 		objectiveBreak = Config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
 		printObj = Config.getBoolean(PRINT_OBJECTIVE, PRINT_OBJECTIVE_DEFAULT);
 		tol = Config.getFloat(OBJ_TOL, OBJ_TOL_DEFAULT);
-		c = Config.getFloat(LEARNING_RATE, LEARNING_RATE_DEFAULT);
 	}
 
 	public int getMaxIter() {
@@ -148,7 +146,7 @@ public class SGDReasoner implements Reasoner {
 		float obj = 0;
 		int nTerms = 0;
 		for (SGDObjectiveTerm term : termStore){
-			obj += term.evaluate()/c;
+			obj += term.evaluate();
 			nTerms++;
 		}
 		return obj/nTerms;
