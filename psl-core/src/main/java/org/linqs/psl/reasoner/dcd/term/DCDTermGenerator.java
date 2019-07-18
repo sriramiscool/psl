@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.dcd.full.term;
+package org.linqs.psl.reasoner.dcd.term;
 
 import org.linqs.psl.application.groundrulestore.GroundRuleStore;
 import org.linqs.psl.config.Config;
@@ -23,7 +23,7 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.reasoner.dcd.full.DCDReasoner;
+import org.linqs.psl.reasoner.dcd.DCDReasoner;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
@@ -160,7 +160,6 @@ public class DCDTermGenerator implements TermGenerator<DCDObjectiveTerm> {
 		} else {
 			throw new IllegalArgumentException("Unsupported ground rule: " + groundRule);
 		}
-		termStore.registerTerm(term);
 
 		return term;
 	}
@@ -178,6 +177,7 @@ public class DCDTermGenerator implements TermGenerator<DCDObjectiveTerm> {
 			FunctionTerm term = sum.getTerm(i);
 
 			if (term instanceof AtomFunctionVariable && !term.isConstant()) {
+				termStore.registerVariable((AtomFunctionVariable)term);
 				AtomFunctionVariable variable = (AtomFunctionVariable)term;
 				// Check to see if we have seen this variable before in this hyperplane.
 				// Note that we are checking for existence in a List (O(n)), but there are usually a small number of
