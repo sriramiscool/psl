@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.dcd.term;
+package org.linqs.psl.reasoner.dcd.full.term;
 
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.term.WeightedTerm;
@@ -24,27 +24,27 @@ import java.util.List;
 
 /**
  * ADMMReasoner objective term of the form <br />
- * weight * max(coeffs^T * x - constant, 0)
- *
- * All coeffs must be non-zero.
+ * weight * [max(coeffs^T * x - constant, 0)]^2
  */
-public class HingeLossTerm extends DCDObjectiveTerm implements WeightedTerm {
+public class SquaredHingeLossTerm extends DCDObjectiveTerm implements WeightedTerm {
 
-	HingeLossTerm(List<AtomFunctionVariable> variables, List<Float> coeffs,
-				  float constant, float weight, float c) {
+	public SquaredHingeLossTerm(List<AtomFunctionVariable> variables, List<Float> coeffs,
+								float constant, float weight, float c) {
 		super(variables, coeffs, constant, weight, c);
 	}
 
-	@Override
-	public void minimize() {
-		minimize(super.computeGradient(), weight);
-	}
-
 	/**
-	 * weight * max(coeffs^T * x - constant, 0)
+	 * weight * [max(coeffs^T * x - constant, 0.0)]^2
 	 */
 	@Override
 	public float evaluate() {
-		return weight * Math.max(super.evaluate(), 0.0f);
+		return weight * (float)Math.pow(Math.max(0.0f, super.evaluate()), 2);
+	}
+
+	@Override
+	public void minimize(float alphaDotQi, float aux) {
+		float g = super.computeGradient(alphaDotQi, aux);
+		g += lagrangeVar/(2*weight);
+		minimize_(g, Float.POSITIVE_INFINITY);
 	}
 }

@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.dcd.term;
+package org.linqs.psl.reasoner.dcd.approx.term;
 
 import org.apache.commons.collections4.list.UnmodifiableList;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;

@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.dcd;
+package org.linqs.psl.reasoner.dcd.full;
 
 import org.linqs.psl.config.Config;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.dcd.term.DCDObjectiveTerm;
-import org.linqs.psl.reasoner.dcd.term.DCDTermStore;
+import org.linqs.psl.reasoner.dcd.full.term.DCDObjectiveTerm;
+import org.linqs.psl.reasoner.dcd.full.term.DCDTermStore;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.slf4j.Logger;
@@ -122,11 +122,13 @@ public class DCDReasoner implements Reasoner {
 					iteration-1, 0, objective);
 		}
 		float time = 0;
+		//TODO: Compute Qs
 		while ((objectiveBreak && MathUtils.compare(objective, oldObjective, tol) != 0)
 				&& iteration <= maxIter) {
 			long start = System.currentTimeMillis();
+			//TODO: compute update for beta and gamma
 			for (DCDObjectiveTerm term: termStore){
-				term.minimize();
+				term.minimize(0,0);
 			}
 			long end = System.currentTimeMillis();
 			oldObjective = objective;
