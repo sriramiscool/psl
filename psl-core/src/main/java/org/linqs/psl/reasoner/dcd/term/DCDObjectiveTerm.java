@@ -121,7 +121,7 @@ public abstract class DCDObjectiveTerm implements WeightedTerm  {
 			lagrangeVar = Math.min(Math.max(lagrangeVar - grad/Qii, 0), lim);
 			for (int i = 0; i < variables.size(); i++) {
 				double val = variables.get(i).getValue() - ((lagrangeVar - pa) * coeffs.get(i));
-				val = Math.max(Math.min(val, 1), 0);
+				//val = Math.max(Math.min(val, 1), 0);
 				variables.get(i).setValue(val);
 			}
 		}

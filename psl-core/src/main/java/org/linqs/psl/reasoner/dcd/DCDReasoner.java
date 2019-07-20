@@ -21,6 +21,7 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.dcd.term.DCDObjectiveTerm;
 import org.linqs.psl.reasoner.dcd.term.DCDTermStore;
+import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.slf4j.Logger;
@@ -117,7 +118,7 @@ public class DCDReasoner implements Reasoner {
 
 		int iteration = 1;
 		if (printObj){
-			log.info("Iterations, Time(ms), Objective");
+			log.info("gretThis:Iterations,Time(ms),Objective");
 			log.info("grepThis:{},{},{}",
 					iteration-1, 0, objective);
 		}
@@ -127,6 +128,10 @@ public class DCDReasoner implements Reasoner {
 			long start = System.currentTimeMillis();
 			for (DCDObjectiveTerm term: termStore){
 				term.minimize();
+			}
+			for (AtomFunctionVariable var :
+					termStore.getVariables()) {
+				var.setValue(Math.max(Math.min(var.getValue(), 1), 0));
 			}
 			long end = System.currentTimeMillis();
 			oldObjective = objective;

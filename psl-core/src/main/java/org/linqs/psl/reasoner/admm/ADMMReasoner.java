@@ -224,7 +224,7 @@ public class ADMMReasoner implements Reasoner {
 
 		int iteration = 1;
 		if (printObj) {
-			log.info("Iterations, Time(ms), Objective");
+			log.info("grepThis:Iterations,Time(ms),Objective");
 			log.info("grepThis:{},{},{}",
 					iteration - 1, 0, computeObjective(termStore));
 		}

@@ -23,10 +23,7 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.term.TermStore;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A TermStore specifically for ADMM terms.
@@ -70,9 +67,7 @@ public class DCDTermStore implements TermStore<DCDObjectiveTerm> {
 
 		int globalId;
 		// Check if the global copy has already been registered.
-		if (variableIndexes.containsKey(atomVariable)) {
-			globalId = variableIndexes.get(atomVariable).intValue();
-		} else {
+		if (!variableIndexes.containsKey(atomVariable)) {
 			// If the global copy has not been registered, register it and prep it's local copies.
 			globalId = variableIndexes.size();
 			variableIndexes.put(atomVariable, globalId);
@@ -169,5 +164,9 @@ public class DCDTermStore implements TermStore<DCDObjectiveTerm> {
 	@Override
 	public List<Integer> getTermIndices(WeightedGroundRule rule) {
 		return store.getTermIndices(rule);
+	}
+
+	public Set<AtomFunctionVariable> getVariables() {
+		return Collections.unmodifiableSet(variableIndexes.keySet());
 	}
 }
