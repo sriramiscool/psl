@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.dcd.term;
 
 import org.apache.commons.collections4.list.UnmodifiableList;
+import org.linqs.psl.config.Config;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.term.WeightedTerm;
 
@@ -27,12 +28,14 @@ import java.util.List;
  * A term in the objective to be optimized by an ADMMReasoner.
  */
 public abstract class DCDObjectiveTerm implements WeightedTerm  {
+	private static final String TRUNCATE_EVERY_STEP = "dcd.truncateEveryStep";
 	protected final List<AtomFunctionVariable> variables;
 	protected final List<Float> coeffs;
 	protected final float constant;
 	protected final float Qii;
 	protected float weight;
 	protected float lagrangeVar;
+	private boolean truncateEveryStep;
 
 	/**
 	 * Caller releases control of |variables|.
@@ -41,6 +44,7 @@ public abstract class DCDObjectiveTerm implements WeightedTerm  {
 							float constant, float weight, float c) {
 		this.variables = variables;
 		assert(variables.size() == coeffs.size());
+		this.truncateEveryStep = Config.getBoolean(TRUNCATE_EVERY_STEP, false);
 
 		this.coeffs = coeffs;
 		this.constant = constant;
@@ -121,7 +125,9 @@ public abstract class DCDObjectiveTerm implements WeightedTerm  {
 			lagrangeVar = Math.min(Math.max(lagrangeVar - grad/Qii, 0), lim);
 			for (int i = 0; i < variables.size(); i++) {
 				double val = variables.get(i).getValue() - ((lagrangeVar - pa) * coeffs.get(i));
-				//val = Math.max(Math.min(val, 1), 0);
+				if (truncateEveryStep) {
+					val = Math.max(Math.min(val, 1), 0);
+				}
 				variables.get(i).setValue(val);
 			}
 		}
