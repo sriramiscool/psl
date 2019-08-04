@@ -90,7 +90,12 @@ public abstract class AbstractMarginalsReasoner implements Reasoner {
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(fname_samples));
             for (int i= 0 ; i < marginalTermStore.getNumVariables(); i++) {
-                writer.append(marginalTermStore.getVariable(i).toString() + "\t");
+                writer.append(marginalTermStore.getVariable(i).toString());
+                if (i == marginalTermStore.getNumVariables()-1){
+                    writer.append("\n");
+                } else {
+                    writer.append("\t");
+                }
             }
             for (int i = 0; i < samples.length; i++) {
                 for (int j = 0; j < samples[i].length; j++) {
