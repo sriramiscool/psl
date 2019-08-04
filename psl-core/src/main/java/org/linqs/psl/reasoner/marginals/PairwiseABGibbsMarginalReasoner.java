@@ -66,10 +66,12 @@ public class PairwiseABGibbsMarginalReasoner extends AbstractMarginalsReasoner {
                 num_samples, numVariables);
         int num_accepts = 0;
         Set<AtomFunctionVariable> sampledSoFar = new HashSet<>();
+        Random rand = new Random(100);
         for (int i = 1; i < num_samples; i++) {
             sampledSoFar.clear();
             for (List<AtomFunctionVariable> vars : blockIdToVar.values()) {
                 float prev_energy = getEnergy(marginalTermStore, vars);
+                Collections.shuffle(vars, rand);
                 for (int k = 0; k < vars.size() ; k++){
                     int id = RandUtils.nextInt(varToBlock.get(vars.get(k)).size());
                     varToBlock.get(vars.get(k)).get(id).sampleUpdate(vars.get(k), sampledSoFar);
