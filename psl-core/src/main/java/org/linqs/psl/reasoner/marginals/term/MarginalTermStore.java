@@ -78,6 +78,10 @@ public class MarginalTermStore implements TermStore<MarginalObjectiveTerm> {
 
 	}
 
+	public Set<AtomFunctionVariable> getAllVariables () {
+		return Collections.unmodifiableSet(variableToTerm.keySet());
+	}
+
 	public List<MarginalObjectiveTerm> getTermsUsingVar(AtomFunctionVariable var){
 		return Collections.unmodifiableList(variableToTerm.get(var));
 	}

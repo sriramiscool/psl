@@ -1,6 +1,5 @@
 package org.linqs.psl.reasoner.marginals;
 
-import com.google.common.collect.Sets;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.reasoner.function.AtomFunctionVariable;
 import org.linqs.psl.reasoner.marginals.term.MarginalObjectiveTerm;
@@ -101,80 +100,81 @@ public class PairwiseABGibbsMarginalReasoner extends AbstractMarginalsReasoner {
 
     private void getBlocks(MarginalTermStore marginalTermStore, Map<Integer,
             List<AtomFunctionVariable>> blockIdToVar,
-                           Map <AtomFunctionVariable, List<Block>> varToBlock){
-        Map<AtomFunctionVariable, Integer> functionToBlockId = new HashMap<>();
-        Map<Integer, Set<MarginalObjectiveTerm>> blockToObjectiveTerms = new HashMap<>();
-
-        initializeBlocks(marginalTermStore, functionToBlockId, blockIdToVar, blockToObjectiveTerms);
-        computeBlocks(marginalTermStore, functionToBlockId, blockIdToVar, blockToObjectiveTerms, varToBlock);
-    }
-
-    private void computeBlocks(MarginalTermStore marginalTermStore,
-                               Map<AtomFunctionVariable, Integer> functionToBlockId,
-                               Map<Integer, List<AtomFunctionVariable>> blockIdToVar,
-                               Map<Integer, Set<MarginalObjectiveTerm>> blockIdToObjectiveTerms,
-                               Map <AtomFunctionVariable, List<Block>> varToBlock) {
-        boolean varPaired;
-        for (int i = 0; i < marginalTermStore.getNumVariables(); i++) {
-            final AtomFunctionVariable var1 = marginalTermStore.getVariable(i);
-            final int setId1 = functionToBlockId.get(var1);
-            final Set<MarginalObjectiveTerm> set1 = blockIdToObjectiveTerms.get(setId1);
-            final List<AtomFunctionVariable> list1 = blockIdToVar.get(setId1);
-            varPaired = false;
-            List<Block> var1Blocks = varToBlock.get(var1) == null ? new ArrayList<Block>() : varToBlock.get(var1);
-            for (int j = 0; j < marginalTermStore.getNumVariables(); j++) {
-                final AtomFunctionVariable var2 = marginalTermStore.getVariable(j);
-                final int setId2 = functionToBlockId.get(var2);
-                if (setId1 == setId2) {
-                    continue;
-                }
-                final Set<MarginalObjectiveTerm> set2 = blockIdToObjectiveTerms.get(setId2);
-                final List<AtomFunctionVariable> list2 = blockIdToVar.get(setId2);
-                List<Block> var2Blocks = varToBlock.get(var2) == null ? new ArrayList<Block>() : varToBlock.get(var2);
-                if (!Sets.intersection(set1, set2).isEmpty()){
-                    varPaired = true;
-                    set1.addAll(set2);
-                    functionToBlockId.put(var2, setId1);
-                    list1.add(var2);
-                    Block block = new PairwiseBlock(var1, var2, Sets.intersection(set1, set2));
-                    var1Blocks.add(block);
-                    var2Blocks.add(block);
-
-                    list2.clear();
-                    blockIdToVar.remove(setId2);
-                    set2.clear();
-                    blockIdToObjectiveTerms.remove(setId2);
-                }
-                varToBlock.put(var2, var2Blocks);
-            }
-            if (!varPaired) {
-                // Could reuse object.
-                var1Blocks.add(new SingleVariableBlock());
-            }
-            varToBlock.put(var1, var1Blocks);
+                                Map <AtomFunctionVariable, List<Block>> varToBlock){
+        Map<AtomFunctionVariable, Set<AtomFunctionVariable>> varToBlockId = new HashMap<>();
+        Map<String, List<MarginalObjectiveTerm>> pairToVars = new HashMap<>();
+        for (AtomFunctionVariable var : marginalTermStore.getAllVariables()) {
+            Set<AtomFunctionVariable> set = new HashSet<>();
+            set.add(var);
+            varToBlockId.put(var, set);
         }
+
+        for (MarginalObjectiveTerm term: marginalTermStore){
+            if (term.getWeight() < weightThreshhold) {
+                continue;
+            }
+            if (term.getVariables().size() > 2) {
+                throw new RuntimeException("Only pairwise cliques with weight greater than " +
+                        weightThreshhold + " allowed. Term violating this: " + term.toString());
+            }
+            if (term.getVariables().size() == 1) {
+                continue;
+            }
+            String str = term.getVariables().get(0).toString() + term.getVariables().get(1).toString();
+            List<MarginalObjectiveTerm> terms = pairToVars.get(str);
+            if (terms == null) {
+                terms = new ArrayList<>();
+            }
+            terms.add(term);
+            pairToVars.put(str, terms);
+        }
+        Set<AtomFunctionVariable> allVars = new HashSet<>();
+        allVars.addAll(marginalTermStore.getAllVariables());
+
+        for (List<MarginalObjectiveTerm> terms: pairToVars.values()) {
+            AtomFunctionVariable var1 = terms.get(0).getVariables().get(0);
+            AtomFunctionVariable var2= terms.get(0).getVariables().get(1);
+            Block blk = new PairwiseBlock(var1, var2, terms);
+            List<Block> blocks1 = varToBlock.get(var1);
+            List<Block> blocks2 = varToBlock.get(var1);
+            if (blocks1 == null) {
+                blocks1 = new ArrayList<>();
+            }
+            if (blocks2 == null) {
+                blocks2 = new ArrayList<>();
+            }
+            blocks1.add(blk);
+            blocks2.add(blk);
+            varToBlock.put(var1, blocks1);
+            varToBlock.put(var2, blocks2);
+            Set b1 = varToBlockId.get(var1);
+            Set b2 = varToBlockId.get(var2);
+            b1.addAll(b2);
+            b2.clear();
+            varToBlockId.put(var2, b1);
+
+            allVars.remove(var1);
+            allVars.remove(var2);
+
+        }
+        for (AtomFunctionVariable var : allVars) {
+            List<Block> block = new ArrayList<>();
+            block.add(new SingleVariableBlock());
+            varToBlock.put(var, block);
+        }
+        Set<Set<AtomFunctionVariable>> blocks = new HashSet<>();
+        blocks.addAll(varToBlockId.values());
+        int i = 0;
+        for (Set<AtomFunctionVariable> block : blocks) {
+            List listBlock = new ArrayList<>();
+            listBlock.addAll(block);
+            blockIdToVar.put(i, listBlock);
+            i++;
+        }
+
+
     }
 
-    private void initializeBlocks(MarginalTermStore marginalTermStore,
-                                  Map<AtomFunctionVariable, Integer> functionToBlockId,
-                                  Map<Integer, List<AtomFunctionVariable>> blockIdToVar,
-                                  Map<Integer, Set<MarginalObjectiveTerm>> blockToObjectiveTerms) {
-        for (int i = 0; i < marginalTermStore.getNumVariables(); i++) {
-            final AtomFunctionVariable var = marginalTermStore.getVariable(i);
-            functionToBlockId.put(var, i);
-            Set<MarginalObjectiveTerm> set = new HashSet<>();
-            final List<MarginalObjectiveTerm> termsUsingVar = marginalTermStore.getTermsUsingVar(var);
-            for (MarginalObjectiveTerm term : termsUsingVar) {
-                if (term.getWeight() > weightThreshhold) {
-                    set.add(term);
-                }
-            }
-            blockToObjectiveTerms.put(i, set);
-            List<AtomFunctionVariable> list = new ArrayList<>();
-            list.add(var);
-            blockIdToVar.put(i, list);
-        }
-    }
 
     interface Block {
         void sampleUpdate(AtomFunctionVariable var, Set<AtomFunctionVariable> sampledSet);
@@ -201,7 +201,7 @@ public class PairwiseABGibbsMarginalReasoner extends AbstractMarginalsReasoner {
     class PairwiseBlock implements Block {
         private final AtomFunctionVariable var1;
         private final AtomFunctionVariable var2;
-        private final Set<MarginalObjectiveTerm> commonTerms;
+        private final List<MarginalObjectiveTerm> commonTerms;
         private float rPlusLowerLim;
         private float rPlusUpperLim;
         private float plusWeight;
@@ -213,7 +213,7 @@ public class PairwiseABGibbsMarginalReasoner extends AbstractMarginalsReasoner {
         private boolean minusActive;
 
         PairwiseBlock(AtomFunctionVariable var1, AtomFunctionVariable var2,
-                      Set<MarginalObjectiveTerm> commonTerms){
+                      List<MarginalObjectiveTerm> commonTerms){
             this.var1 = var1;
             this.var2 = var2;
             this.commonTerms = commonTerms;
@@ -269,18 +269,18 @@ public class PairwiseABGibbsMarginalReasoner extends AbstractMarginalsReasoner {
 
         //TODO: need to add comments explaining what is happening. The code sort of looks like a mess.
         public void sampleUpdate(AtomFunctionVariable var, Set<AtomFunctionVariable> sampledSet){
-            if (var != this.var1 && var != this.var2) {
+            if (!var.equals(this.var1) && !var.equals(this.var2)) {
                 throw new RuntimeException("Asking for a variable that does not exist in the block.");
             }
             if (sampledSet.contains(var)){
                 return;
             }
-            if ((!sampledSet.contains(this.var1) && this.var2 == var) || (!sampledSet.contains(this.var2) && this.var1 == var)) {
+            if ((!sampledSet.contains(this.var1) && this.var2.equals(var)) || (!sampledSet.contains(this.var2) && this.var1.equals(var))) {
                 var.setValue(RandUtils.nextFloat());
                 sampledSet.add(var);
                 return;
             }
-            AtomFunctionVariable obsVar = (var == this.var1) ? this.var2 : this.var1;
+            AtomFunctionVariable obsVar = (var.equals(this.var1)) ? this.var2 : this.var1;
             float obsVarVal = (float)obsVar.getValue();
             //TODO: For future, need to ensure we can have multiple active zones.
             if (plusActive && minusActive) {
