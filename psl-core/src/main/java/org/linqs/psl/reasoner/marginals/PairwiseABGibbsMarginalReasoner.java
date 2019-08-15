@@ -308,7 +308,7 @@ public class PairwiseABGibbsMarginalReasoner extends AbstractMarginalsReasoner {
                         (Math.abs(rMinusUpperLim - rMinusLowerLim) < intervalThreshhold)) {
                     float ulim = 1;
                     float llim = 0;
-                    if (obsVar == this.var1) {
+                    if (obsVar.equals(this.var1)) {
                         if (rMinusLowerLim <= rMinusUpperLim) {
                             llim = obsVarVal - rMinusUpperLim;
                             ulim = obsVarVal - rMinusLowerLim;
@@ -339,9 +339,9 @@ public class PairwiseABGibbsMarginalReasoner extends AbstractMarginalsReasoner {
 
         @Override
         public AtomFunctionVariable getNeighbor(AtomFunctionVariable var) {
-            if (var == this.var1) {
+            if (var.equals(this.var1)) {
                 return var2;
-            } else if (var == this.var2) {
+            } else if (var.equals(this.var2)) {
                 return var1;
             }
             return null;
