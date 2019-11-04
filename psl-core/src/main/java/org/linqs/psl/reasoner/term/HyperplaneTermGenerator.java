@@ -20,25 +20,18 @@ package org.linqs.psl.reasoner.term;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.atom.RandomVariableAtom;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.UnweightedGroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.rule.*;
 import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
-import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
-import org.linqs.psl.reasoner.term.TermGenerator;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -60,6 +53,44 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
 
     public HyperplaneTermGenerator() {
         invertNegativeWeight = Config.getBoolean(INVERT_NEGATIVE_WEIGHTS_KEY, INVERT_NEGATIVE_WEIGHTS_DEFAULT);
+    }
+
+
+    @Override
+    public int generateTerms(Rule r, List<GroundRule> grules, final TermStore<T, V> termStore) {
+        int initialSize = termStore.size();
+        termStore.ensureCapacity(initialSize + grules.size());
+
+        Parallel.foreach(grules, new Parallel.Worker<GroundRule>() {
+            @Override
+            public void work(int index, GroundRule rule) {
+                boolean negativeWeight =
+                        rule instanceof WeightedGroundRule
+                                && ((WeightedGroundRule)rule).getWeight() < 0.0;
+
+                if (negativeWeight) {
+                    // Skip
+                    if (!invertNegativeWeight) {
+                        return;
+                    }
+
+                    // Negate (weight and expression) rules that have a negative weight.
+                    for (GroundRule negatedRule : rule.negate()) {
+                        T term = createTerm(negatedRule, termStore);
+                        if (term != null && term.size() > 0) {
+                            termStore.add(rule, term);
+                        }
+                    }
+                } else {
+                    T term = createTerm(rule, termStore);
+                    if (term != null && term.size() > 0) {
+                        termStore.add(rule, term);
+                    }
+                }
+            }
+        });
+
+        return termStore.size() - initialSize;
     }
 
     @Override

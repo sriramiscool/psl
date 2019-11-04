@@ -23,6 +23,7 @@ import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.arithmetic.UnweightedGroundArithmeticRule;
@@ -33,10 +34,7 @@ import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Prepares blocks.
@@ -77,6 +75,11 @@ public class ConstraintBlockerTermGenerator implements TermGenerator<ConstraintB
         }
 
         return generateTermsInternal((AtomRegisterGroundRuleStore)ruleStore, (ConstraintBlockerTermStore)termStore);
+    }
+
+    @Override
+    public int generateTerms(Rule r, List<GroundRule> rules, TermStore<ConstraintBlockerTerm, RandomVariableAtom> termStore) {
+        throw new UnsupportedOperationException(this.getClass().toString() + " cannot generate terms for single rule.");
     }
 
     private int generateTermsInternal(AtomRegisterGroundRuleStore ruleStore, ConstraintBlockerTermStore termStore) {

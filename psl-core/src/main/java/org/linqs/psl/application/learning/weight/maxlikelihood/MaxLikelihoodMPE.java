@@ -17,10 +17,17 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
+import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.reasoner.Reasoner;
+import org.linqs.psl.reasoner.term.TermGenerator;
+import org.linqs.psl.reasoner.term.TermStore;
 
 import java.util.List;
 
@@ -40,5 +47,14 @@ public class MaxLikelihoodMPE extends VotedPerceptron {
 
     public MaxLikelihoodMPE(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB, false);
+    }
+
+    public MaxLikelihoodMPE(List<Rule> rules, List<WeightedRule> mutableRules,
+                            Database rvDB, Database observedDB,
+                            Reasoner reasoner, GroundRuleStore groundRuleStore,
+                            TermStore termStore, TermGenerator termGenerator,
+                            PersistedAtomManager atomManager, TrainingMap trainingMap){
+        super(rules, mutableRules, rvDB, observedDB, reasoner, groundRuleStore, termStore,
+                termGenerator, atomManager, trainingMap);
     }
 }
