@@ -20,7 +20,7 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
 
     private static final String CONFIG_PREFIX = "rsl";
     private static final String ITERATIONS_KEY = CONFIG_PREFIX + ".iter";
-    private static final int ITERATIONS_DEFAULT = 10000;
+    private static final int ITERATIONS_DEFAULT = 10;
     private static final String MAX_RULE_LEN_KEY = CONFIG_PREFIX + ".rulelen";
     private static final int MAX_RULE_LEN_DEFAULT = 3;
     private static final String NUM_RULES_KEY = CONFIG_PREFIX + ".numrules";
@@ -76,7 +76,8 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
             Rule r = ruleGen.generateRule(this.maxRuleLen);
             this.addRuleToModel(r);
         }
-        this.weightLearner.learn();
+        this.getNewWeightLearner().learn();
+        this.evaluator.compute(trainingMap);
     }
 
     interface RandomRuleGenerator {

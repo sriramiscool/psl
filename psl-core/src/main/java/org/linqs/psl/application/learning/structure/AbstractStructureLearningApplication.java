@@ -2,11 +2,12 @@ package org.linqs.psl.application.learning.structure;
 
 import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.learning.weight.TrainingMap;
+import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
-import org.linqs.psl.evaluation.statistics.ContinuousEvaluator;
+import org.linqs.psl.evaluation.statistics.DiscreteEvaluator;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.Grounding;
@@ -76,7 +77,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
      * This is only used for logging/information, and not for gradients.
      */
     public static final String EVALUATOR_KEY = CONFIG_PREFIX + ".evaluator";
-    public static final String EVALUATOR_DEFAULT = ContinuousEvaluator.class.getName();
+    public static final String EVALUATOR_DEFAULT = DiscreteEvaluator.class.getName();
 
 
     /**
@@ -107,7 +108,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
 
     protected Reasoner reasoner;
     //TODO: this is very specific right now. Needs to become more general so we can use any weight learning.
-    protected MaxLikelihoodMPE weightLearner;
+    private MaxLikelihoodMPE weightLearner;
     protected GroundRuleStore groundRuleStore;
     protected TermGenerator termGenerator;
     protected TermStore termStore;
@@ -160,6 +161,10 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
         this.bestValueForRulesSoFar = Double.NEGATIVE_INFINITY;
 
         evaluator = (Evaluator) Config.getNewObject(EVALUATOR_KEY, EVALUATOR_DEFAULT);
+        //Avoid persistentatommanager exception that is thrown if target data is not complete.
+        Config.addProperty(PersistedAtomManager.THROW_ACCESS_EXCEPTION_KEY, false);
+        Config.addProperty(MaxLikelihoodMPE.NUM_STEPS_KEY, 10);
+        Config.addProperty(ADMMReasoner.MAX_ITER_KEY, 100);
     }
 
     /**
@@ -245,10 +250,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
 
         Reasoner reasoner = (Reasoner)Config.getNewObject(REASONER_KEY, REASONER_DEFAULT);
 
-        MaxLikelihoodMPE wlearner = new MaxLikelihoodMPE(allRules, mutableRules, rvDB, observedDB,
-                reasoner, groundRuleStore, termStore, termGenerator, atomManager, trainingMap);
-
-        initGroundModel(reasoner, wlearner, groundRuleStore, termStore, termGenerator, atomManager, trainingMap);
+        initGroundModel(reasoner, groundRuleStore, termStore, termGenerator, atomManager, trainingMap);
     }
 
     public void resetModel(){
@@ -258,7 +260,6 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
         this.mutableRules.clear();
         //TODO: Can be made more efficient by not having to reground initial model.
         this.groundRuleStore.close();
-        this.weightLearner.close();
         this.groundModelInit = false;
         this.initGroundModel();
     }
@@ -287,14 +288,13 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
      * Children should favor overriding postInitGroundModel() instead of this.
      */
     public void initGroundModel(
-            Reasoner reasoner, MaxLikelihoodMPE weightLearner, GroundRuleStore groundRuleStore,
+            Reasoner reasoner, GroundRuleStore groundRuleStore,
             TermStore termStore, TermGenerator termGenerator,
             PersistedAtomManager atomManager, TrainingMap trainingMap) {
         if (groundModelInit) {
             return;
         }
 
-        this.weightLearner = weightLearner;
         this.reasoner = reasoner;
         this.groundRuleStore = groundRuleStore;
         this.termStore = termStore;
@@ -306,6 +306,19 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
 
         groundModelInit = true;
 
+    }
+
+    public WeightLearningApplication getNewWeightLearner(){
+        if (!groundModelInit){
+            return null;
+        }
+        //Not sure if this is needed.
+//        if (this.weightLearner != null) {
+//            this.weightLearner.close();
+//        }
+        this.weightLearner = new MaxLikelihoodMPE(allRules, mutableRules, rvDB, observedDB,
+                reasoner, groundRuleStore, termStore, termGenerator, atomManager, trainingMap);
+        return this.weightLearner;
     }
 
     /**
@@ -358,6 +371,9 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
         atomManager = null;
         rvDB = null;
         observedDB = null;
+        if (this.weightLearner != null) {
+            this.weightLearner.close();
+        }
     }
 
     /**
