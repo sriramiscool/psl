@@ -441,7 +441,7 @@ public final class IteratorUtils {
             swap(i, k, directions);
             swap(i, k, permutations);
             // if it's at the start/end or the next element in the direction
-            // is greater, reset its direction.
+            // is greater, resetModel its direction.
             if ((k == 0) || (k == size-1) || (permutations[k + directions[k]] > e)) {
                 directions[k] = 0;
             }

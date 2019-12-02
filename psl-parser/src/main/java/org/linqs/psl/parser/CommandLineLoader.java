@@ -17,32 +17,23 @@
  */
 package org.linqs.psl.parser;
 
+import org.apache.commons.cli.*;
+import org.apache.log4j.PropertyConfigurator;
 import org.linqs.psl.application.inference.MPEInference;
+import org.linqs.psl.application.learning.structure.RandomStructureLearner;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.util.SystemUtils;
 import org.linqs.psl.util.Version;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.UnknownHostException;
-import java.net.InetAddress;
-import java.nio.file.Paths;
 import java.util.Comparator;
-import java.util.Properties;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Load the command line options into PSL Config's configuration values and 
@@ -57,6 +48,8 @@ public class CommandLineLoader {
     public static final String OPERATION_INFER_LONG = "infer";
     public static final String OPERATION_LEARN = "l";
     public static final String OPERATION_LEARN_LONG = "learn";
+    public static final String OPERATION_STR_LEARN = "s";
+    public static final String OPERATION_STR_LEARN_LONG = "strlearn";
 
     public static final String OPTION_DATA = "d";
     public static final String OPTION_DATA_LONG = "data";
@@ -85,6 +78,7 @@ public class CommandLineLoader {
     public static final String DEFAULT_POSTGRES_DB_NAME = "psl_cli";
     public static final String DEFAULT_IA = MPEInference.class.getName();
     public static final String DEFAULT_WLA = MaxLikelihoodMPE.class.getName();
+    public static final String DEFAULT_SLA = RandomStructureLearner.class.getName();
 
     private static Options options = setupOptions();
     private static Logger log;
@@ -216,6 +210,16 @@ public class CommandLineLoader {
                         " (defaults to " + DEFAULT_WLA + ").")
                 .hasArg()
                 .argName("learner")
+                .optionalArg(true)
+                .build());
+
+        newOptions.addOption(Option.builder(OPERATION_STR_LEARN)
+                .longOpt(OPERATION_STR_LEARN_LONG)
+                .desc("Run structure learning." +
+                        " You can optionally supply a fully qualified name for a structure learner" +
+                        " (defaults to " + DEFAULT_SLA + ").")
+                .hasArg()
+                .argName("strlearner")
                 .optionalArg(true)
                 .build());
 

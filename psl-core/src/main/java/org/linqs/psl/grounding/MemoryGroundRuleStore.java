@@ -130,4 +130,12 @@ public class MemoryGroundRuleStore implements GroundRuleStore {
             groundRules = null;
         }
     }
+
+    @Override
+    public void clear() {
+        if (groundRules != null) {
+            groundRules.clear();
+        }
+    }
+
 }

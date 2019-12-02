@@ -21,7 +21,7 @@ public class Partition {
     /**
      * When grounding with lazy atoms, we will initially set their partition
      * value to this so that we can tell them apart.
-     * Afterwards, they will be reset to the correct value (the write partition
+     * Afterwards, they will be resetModel to the correct value (the write partition
      * of the database).
      * Note that no valid partition is actaully allowed to have negative values.
      */

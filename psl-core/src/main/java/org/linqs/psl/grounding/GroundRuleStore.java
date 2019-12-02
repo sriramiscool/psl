@@ -21,7 +21,6 @@ import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
-import org.linqs.psl.model.rule.WeightedRule;
 
 /**
  * Container for a set of {@link GroundRule GroundRules}.
@@ -46,6 +45,12 @@ public interface GroundRuleStore {
      * A store that has been closed cannot be used again.
      */
     public void close();
+
+    /**
+     * Release any memory held by the store.
+     * A store that has been cleared can be used again.
+     */
+    public void clear();
 
     /**
      * Removes a GroundRule from this store.

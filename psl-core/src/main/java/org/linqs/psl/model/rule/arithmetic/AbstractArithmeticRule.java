@@ -416,7 +416,7 @@ public abstract class AbstractArithmeticRule extends AbstractRule {
     private void groundSingleSummationRule(
             Constant[] queryRow, Map<Variable, Integer> variableMap,
             AtomManager atomManager, GroundingResources gr) {
-        // First reset the summation counts.
+        // First resetModel the summation counts.
         for (Map.Entry<SummationVariable, Integer> entry : gr.totalSummationCounts.entrySet()) {
             gr.summationCounts.put(entry.getKey(), entry.getValue());
         }

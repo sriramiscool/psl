@@ -11,6 +11,7 @@ import org.linqs.psl.evaluation.statistics.Evaluator;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.grounding.Grounding;
 import org.linqs.psl.grounding.MemoryGroundRuleStore;
+import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.GroundAtom;
 import org.linqs.psl.model.atom.ObservedAtom;
 import org.linqs.psl.model.atom.RandomVariableAtom;
@@ -30,9 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by sriramsrinivasan on 10/30/19.
@@ -85,6 +84,9 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
      */
     public static final String WLEARNER_KEY = CONFIG_PREFIX + ".wlearning";
     public static final String WLEARNER_DEFAULT = MaxLikelihoodMPE.class.getName();
+    protected final List<StandardPredicate> predicates;
+    protected final Set<StandardPredicate> openPredicates;
+    protected final Set<StandardPredicate> closedPredicates;
 
 
     protected Database rvDB;
@@ -97,6 +99,9 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
 
     protected List<Rule> allRules;
     protected List<WeightedRule> mutableRules;
+    protected List<Rule> bestRulesSoFar;
+    protected List<Rule> initialListOfRules;
+    protected double bestValueForRulesSoFar;
 
     protected TrainingMap trainingMap;
 
@@ -118,15 +123,32 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
      */
     protected boolean inMPEState;
 
-    public AbstractStructureLearningApplication(List<Rule> rules, Database rvDB, Database observedDB) {
+    public AbstractStructureLearningApplication(List<Rule> rules, Database rvDB, Database observedDB,
+                                                Set<StandardPredicate> closedPredicates,
+                                                Set<StandardPredicate> openPredicates) {
         this.rvDB = rvDB;
         this.observedDB = observedDB;
+        List<StandardPredicate> predicates = new ArrayList<>();
+        this.initialListOfRules = new ArrayList<>();
+        for (StandardPredicate pred: closedPredicates){
+            predicates.add(pred);
+        }
+        for (StandardPredicate pred: openPredicates){
+            predicates.add(pred);
+        }
+        this.predicates = Collections.unmodifiableList(predicates);
+        this.closedPredicates = Collections.unmodifiableSet(closedPredicates);
+        this.openPredicates = Collections.unmodifiableSet(openPredicates);
+
 
         allRules = new ArrayList<Rule>();
         mutableRules = new ArrayList<WeightedRule>();
+        this.bestRulesSoFar = new ArrayList<>();
+        this.bestRulesSoFar.addAll(rules);
 
         for (Rule rule : rules) {
             allRules.add(rule);
+            initialListOfRules.add(rule);
 
             if (rule instanceof WeightedRule) {
                 mutableRules.add((WeightedRule)rule);
@@ -135,12 +157,13 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
 
         groundModelInit = false;
         inMPEState = false;
+        this.bestValueForRulesSoFar = Double.NEGATIVE_INFINITY;
 
         evaluator = (Evaluator) Config.getNewObject(EVALUATOR_KEY, EVALUATOR_DEFAULT);
     }
 
     /**
-     * Learns new weights.
+     * Learns new Rules.
      * <p>
      * The {@link RandomVariableAtom RandomVariableAtoms} in the distribution are those
      * persisted in the random variable Database when this method is called. All
@@ -228,10 +251,25 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
         initGroundModel(reasoner, wlearner, groundRuleStore, termStore, termGenerator, atomManager, trainingMap);
     }
 
+    public void resetModel(){
+        this.termStore.close();
+        this.allRules.clear();
+        this.allRules.addAll(initialListOfRules);
+        this.mutableRules.clear();
+        //TODO: Can be made more efficient by not having to reground initial model.
+        this.groundRuleStore.close();
+        this.weightLearner.close();
+        this.groundModelInit = false;
+        this.initGroundModel();
+    }
+
     protected boolean addRuleToModel(Rule r){
         int count = r.groundAll(atomManager, groundRuleStore);
         log.debug("New rule: " + r + " generated " + count + " groundings.");
         allRules.add(r);
+        if (r instanceof WeightedRule) {
+            mutableRules.add((WeightedRule) r);
+        }
         termStore.ensureCapacity(atomManager.getCachedRVACount());
         List<GroundRule> grules = new ArrayList<>();
         for (GroundRule gr: groundRuleStore.getGroundRules(r)){
@@ -288,6 +326,14 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
         reasoner.optimize(termStore);
 
         inMPEState = true;
+    }
+
+    public Model getBestModel(){
+        Model bestModel = new Model();
+        for (Rule rule : bestRulesSoFar) {
+            bestModel.addRule(rule);
+        }
+        return bestModel;
     }
 
     @Override
@@ -379,8 +425,11 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
      * Construct a weight learning application given the data.
      * Look for a constructor like: (List<Rule>, Database (rv), Database (observed)).
      */
-    public static AbstractStructureLearningApplication getWLA(String name, List<Rule> rules,
-                                                   Database randomVariableDatabase, Database observedTruthDatabase) {
+    public static AbstractStructureLearningApplication getSLA(String name, List<Rule> rules,
+                                                              Database randomVariableDatabase,
+                                                              Database observedTruthDatabase,
+                                                              Set<StandardPredicate> closedPredicates,
+                                                              Set<StandardPredicate> openPredicates) {
         String className = Reflection.resolveClassName(name);
         if (className == null) {
             throw new IllegalArgumentException("Could not find class: " + name);
@@ -397,23 +446,24 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
 
         Constructor<? extends AbstractStructureLearningApplication> constructor = null;
         try {
-            constructor = classObject.getConstructor(List.class, Database.class, Database.class);
+            constructor = classObject.getConstructor(List.class, Database.class, Database.class, Set.class, Set.class);
         } catch (NoSuchMethodException ex) {
-            throw new IllegalArgumentException("No sutible constructor found for weight learner: " + className + ".", ex);
+            throw new IllegalArgumentException("No sutible constructor found for structure learner: " + className + ".", ex);
         }
 
-        AbstractStructureLearningApplication wla = null;
+        AbstractStructureLearningApplication sla = null;
         try {
-            wla = constructor.newInstance(rules, randomVariableDatabase, observedTruthDatabase);
+            sla = constructor.newInstance(rules, randomVariableDatabase, observedTruthDatabase,
+                    closedPredicates, openPredicates);
         } catch (InstantiationException ex) {
-            throw new RuntimeException("Unable to instantiate weight learner (" + className + ")", ex);
+            throw new RuntimeException("Unable to instantiate structure learner (" + className + ")", ex);
         } catch (IllegalAccessException ex) {
             throw new RuntimeException("Insufficient access to constructor for " + className, ex);
         } catch (InvocationTargetException ex) {
             throw new RuntimeException("Error thrown while constructing " + className, ex);
         }
 
-        return wla;
+        return sla;
     }
 
 }

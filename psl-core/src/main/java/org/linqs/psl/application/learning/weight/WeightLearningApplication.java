@@ -431,7 +431,7 @@ public abstract class WeightLearningApplication implements ModelApplication {
     /**
      * Compute the incompatibility in the model using the labels (truth values) from the observed (truth) database.
      * This method is responsible for filling the observedIncompatibility member variable.
-     * This may call setLabeledRandomVariables() and not reset any ground atoms to their original value.
+     * This may call setLabeledRandomVariables() and not resetModel any ground atoms to their original value.
      *
      * The default implementation just calls setLabeledRandomVariables() and sums the incompatibility for each rule.
      */

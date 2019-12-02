@@ -17,10 +17,12 @@
  */
 package org.linqs.psl.cli;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.linqs.psl.application.inference.InferenceApplication;
-import org.linqs.psl.application.inference.MPEInference;
+import org.linqs.psl.application.learning.structure.AbstractStructureLearningApplication;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
-import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.Partition;
@@ -39,34 +41,18 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.UnweightedGroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.term.Constant;
-import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.parser.CommandLineLoader;
+import org.linqs.psl.parser.ModelLoader;
 import org.linqs.psl.util.Reflection;
 import org.linqs.psl.util.StringUtils;
 import org.linqs.psl.util.Version;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.net.InetAddress;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.nio.file.Paths;
+import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * Launches PSL from the command line.
@@ -319,6 +305,68 @@ public class Launcher {
         }
     }
 
+
+
+    private void learnRules(List<Rule> rules, DataStore dataStore, Set<StandardPredicate> closedPredicates, String slaName) {
+        log.info("Starting rules learning with learner: " + slaName);
+
+        Partition targetPartition = dataStore.getPartition(PARTITION_NAME_TARGET);
+        Partition observationsPartition = dataStore.getPartition(PARTITION_NAME_OBSERVATIONS);
+        Partition truthPartition = dataStore.getPartition(PARTITION_NAME_LABELS);
+
+        Database randomVariableDatabase = dataStore.getDatabase(targetPartition, closedPredicates, observationsPartition);
+        Database observedTruthDatabase = dataStore.getDatabase(truthPartition, dataStore.getRegisteredPredicates());
+
+        Set<StandardPredicate> openPredicates = dataStore.getRegisteredPredicates();
+        openPredicates.removeAll(closedPredicates);
+        AbstractStructureLearningApplication learner = AbstractStructureLearningApplication.getSLA(slaName, rules,
+                randomVariableDatabase, observedTruthDatabase, closedPredicates, openPredicates);
+        learner.learn();
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG)) {
+            String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG);
+            outputGroundRules(learner.getGroundRuleStore(), path, false);
+        }
+
+        Model model = learner.getBestModel();
+
+        learner.close();
+
+        if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG)) {
+            String path = parsedOptions.getOptionValue(CommandLineLoader.OPTION_OUTPUT_SATISFACTION_LONG);
+            outputGroundRules(learner.getGroundRuleStore(), path, true);
+        }
+
+        randomVariableDatabase.close();
+        observedTruthDatabase.close();
+
+        log.info("Rules learning complete");
+
+        String modelFilename = parsedOptions.getOptionValue(CommandLineLoader.OPTION_MODEL);
+
+        String learnedFilename;
+        int prefixPos = modelFilename.lastIndexOf(MODEL_FILE_EXTENSION);
+        if (prefixPos == -1) {
+            learnedFilename = modelFilename + MODEL_FILE_EXTENSION;
+        } else {
+            learnedFilename = modelFilename.substring(0, prefixPos) + "-learned" + MODEL_FILE_EXTENSION;
+        }
+        log.info("Writing learned model to {}", learnedFilename);
+
+        String outModel = model.asString();
+
+        // Remove excess parens.
+        outModel = outModel.replaceAll("\\( | \\)", "");
+
+        try (FileWriter learnedFileWriter = new FileWriter(new File(learnedFilename))) {
+            learnedFileWriter.write(outModel);
+        } catch (IOException ex) {
+            log.error("Failed to write learned model:\n" + outModel);
+            throw new RuntimeException("Failed to write learned model to: " + learnedFilename, ex);
+        }
+    }
+
+
     /**
      * Run eval.
      * 
@@ -392,7 +440,18 @@ public class Launcher {
         Set<StandardPredicate> closedPredicates = loadData(dataStore);
 
         // Load model
-        Model model = loadModel(dataStore);
+        Model model = null;
+        List<Rule> rules = new ArrayList<>();
+        if (parsedOptions.hasOption(CommandLineLoader.OPERATION_STR_LEARN)) {
+            try {
+                model = loadModel(dataStore);
+                rules = model.getRules();
+            } catch (RuntimeException e) {
+                log.debug("Initialize with an empty model.");
+            }
+        } else {
+            model = loadModel(dataStore);
+        }
 
         // Inference
         Database evalDB = null;
@@ -400,6 +459,8 @@ public class Launcher {
             evalDB = runInference(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_INFER, CommandLineLoader.DEFAULT_IA));
         } else if (parsedOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) {
             learnWeights(model, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_LEARN, CommandLineLoader.DEFAULT_WLA));
+        } else if (parsedOptions.hasOption(CommandLineLoader.OPERATION_STR_LEARN)) {
+            learnRules(rules, dataStore, closedPredicates, parsedOptions.getOptionValue(CommandLineLoader.OPERATION_STR_LEARN, CommandLineLoader.DEFAULT_SLA));
         } else {
             throw new IllegalArgumentException("No valid operation provided.");
         }
@@ -441,7 +502,9 @@ public class Launcher {
             return false;
         }
 
-        if (!givenOptions.hasOption(CommandLineLoader.OPERATION_INFER) && (!givenOptions.hasOption(CommandLineLoader.OPERATION_LEARN))) {
+        if (!givenOptions.hasOption(CommandLineLoader.OPERATION_INFER) &&
+                (!givenOptions.hasOption(CommandLineLoader.OPERATION_LEARN)) &&
+                (!givenOptions.hasOption(CommandLineLoader.OPERATION_STR_LEARN))) {
             System.out.println(String.format("Missing required option: --%s/-%s.", CommandLineLoader.OPERATION_INFER_LONG, CommandLineLoader.OPERATION_INFER));
             helpFormatter.printHelp("psl", CommandLineLoader.getOptions(), true);
             return false;
