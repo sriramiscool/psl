@@ -194,9 +194,15 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
             if (possiblePredicates == null) {
                 throw new RuntimeException("There is no closed predicate with same arity as open predicates.");
             }
+            Set<Predicate> usedPredicate = new HashSet<>();
             for (int i = 0; i < newRuleLen - 1; i++) {
-                predicates.add(possiblePredicates.get(RandUtils.nextInt(possiblePredicates.size())));
+                Predicate p = possiblePredicates.get(RandUtils.nextInt(possiblePredicates.size()));
+                if (usedPredicate.contains(p)){
+                    break;
+                }
+                predicates.add(p);
                 isNegated.add(RandUtils.nextBoolean());
+                usedPredicate.add(p);
             }
             predicates.add(headPredicate);
             isNegated.add(RandUtils.nextBoolean());

@@ -10,6 +10,8 @@ import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
 import org.linqs.psl.model.term.Variable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -20,6 +22,8 @@ import java.util.Set;
  * Created by sriramsrinivasan on 12/1/19.
  */
 public class LocalRuleTemplate implements RuleTemplate {
+    private static final Logger log = LoggerFactory.getLogger(LocalRuleTemplate.class);
+
     protected final Set<Predicate> predicates;
     protected final Set<StandardPredicate> openPredicates;
     protected final Set<StandardPredicate> closedPredicates;
@@ -76,7 +80,7 @@ public class LocalRuleTemplate implements RuleTemplate {
         head = isNegated.get(predicates.size()-1) ? new Negation(head):head;
         Formula and = (qatoms.length > 1) ? new Conjunction(qatoms) : qatoms[0];
         Formula implies = new Implication(and, head);
-        System.out.println(implies.toString());
+        log.trace("Rule generated: " + implies.toString());
         return new WeightedLogicalRule(implies, weight, isSquared);
     }
 }
