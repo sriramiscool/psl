@@ -224,8 +224,8 @@ public class ADMMReasoner implements Reasoner {
 
 		int iteration = 1;
 		if (printObj) {
-			log.info("grepThis:Iterations,Time(ms),Objective");
-			log.info("grepThis:{},{},{}",
+			log.trace("grepThis:Iterations,Time(ms),Objective");
+			log.trace("grepThis:{},{},{}",
 					iteration - 1, 0, computeObjective(termStore));
 		}
 		float time = 0;
@@ -251,7 +251,7 @@ public class ADMMReasoner implements Reasoner {
 			long end = System.currentTimeMillis();
 			time += end - start;
 			if (printObj) {
-				log.info("grepThis:{},{},{}",
+				log.trace("grepThis:{},{},{}",
 						iteration - 1, time, computeObjective(termStore));
 			}
 

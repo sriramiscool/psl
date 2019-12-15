@@ -150,7 +150,9 @@ public class PairwiseABGibbsMarginalReasoner extends AbstractMarginalsReasoner {
             Set b1 = varToBlockId.get(var1);
             Set b2 = varToBlockId.get(var2);
             b1.addAll(b2);
-            b2.clear();
+            if (b1 != b2) {
+                b2.clear();
+            }
             varToBlockId.put(var2, b1);
 
             allVars.remove(var1);
