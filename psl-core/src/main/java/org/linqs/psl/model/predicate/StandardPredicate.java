@@ -19,6 +19,8 @@ package org.linqs.psl.model.predicate;
 
 import org.linqs.psl.model.term.ConstantType;
 
+import java.util.List;
+
 /**
  * Predicate of GroundAtoms that can be persisted.
  * Standard predicates cannot have arguments of DeferredFunctionalUniqueID
@@ -26,10 +28,12 @@ import org.linqs.psl.model.term.ConstantType;
  */
 public class StandardPredicate extends Predicate {
     private boolean isBlock;
+    private String[] domains;
 
     private StandardPredicate(String name, ConstantType[] types) {
         super(name, types);
         isBlock = false;
+        domains = new String[types.length];
 
         for (ConstantType type : types) {
             if (type == ConstantType.DeferredFunctionalUniqueID) {
@@ -46,6 +50,22 @@ public class StandardPredicate extends Predicate {
 
     public boolean isBlock() {
         return isBlock;
+    }
+
+    public void setDomains(List<String> newDomains) {
+        if (newDomains.size() != getArity()) {
+            throw new IllegalArgumentException(
+                    String.format("Domain arity (%d) must match predicate arity (%d).",
+                    newDomains.size(), getArity()));
+        }
+
+        for (int i = 0; i < newDomains.size(); i++) {
+            domains[i] = newDomains.get(i);
+        }
+    }
+
+    public String[] getDomains() {
+        return domains;
     }
 
     /**
@@ -89,5 +109,24 @@ public class StandardPredicate extends Predicate {
         }
 
         return predicate;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+
+        builder.append(super.toString());
+
+        builder.append("[");
+        for (int i = 0; i < getArity(); i++) {
+            if (i != 0) {
+                builder.append(", ");
+            }
+
+            builder.append(domains[i]);
+        }
+        builder.append("]");
+
+        return builder.toString();
     }
 }

@@ -58,6 +58,7 @@ public class DataLoader {
     public static final String PROPERTY_OPEN = "open";
     public static final String PROPERTY_CLOSED = "closed";
     public static final String PROPERTY_TYPES = "types";
+    public static final String PROPERTY_DOMAINS = "domains";
     public static final String PROPERTY_BLOCK = "block";
     public static final String PROPERTY_FUNCTION = "implementation";
 
@@ -203,6 +204,7 @@ public class DataLoader {
         boolean isBlock = false;
         String externalFunctionImplementation = null;
         List<ConstantType> types = new ArrayList<ConstantType>();
+        List<String> domains = new ArrayList<String>();
 
         if (name.contains("/")) {
             String[] parts = name.split("/");
@@ -243,6 +245,10 @@ public class DataLoader {
                         }
 
                         arity = types.size();
+                    } else if (key.equals(PROPERTY_DOMAINS)) {
+                        @SuppressWarnings("unchecked")
+                        List<String> suppressWarnings = (List<String>)(mapProperty.get(key));
+                        domains = suppressWarnings;
                     } else if (key.equals(PROPERTY_FUNCTION)) {
                         Object rawValue = mapProperty.get(key);
                         if (!(rawValue instanceof String)) {
@@ -289,6 +295,11 @@ public class DataLoader {
 
         StandardPredicate predicate = StandardPredicate.get(name, types.toArray(new ConstantType[0]));
         predicate.setBlock(isBlock);
+
+        if (domains.size() != 0) {
+            predicate.setDomains(domains);
+        }
+
         dataStore.registerPredicate(predicate);
 
         if (isClosed.booleanValue()) {
