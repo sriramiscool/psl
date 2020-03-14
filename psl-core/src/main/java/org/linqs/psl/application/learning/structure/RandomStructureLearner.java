@@ -25,9 +25,10 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
     private static final int MAX_RULE_LEN_DEFAULT = 3;
     private static final String NUM_RULES_KEY = CONFIG_PREFIX + ".numrules";
     private static final int NUM_RULES_DEFAULT = 5;
+    private static final int NUM_TRIES_PER_RULE_DEFAULT = 5;
 
     private int numIte;
-    protected Map<Predicate, Integer> predicateToId;
+    protected Map<StandardPredicate, Integer> predicateToId;
     private int numRules;
     protected Map<Integer, RandomRuleGenerator> idToTemplate;
     private int maxRuleLen;
@@ -73,11 +74,21 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
         this.resetModel();
         for (int i = 0; i < this.numRules; i++){
             RandomRuleGenerator ruleGen = idToTemplate.get(RandUtils.nextInt(idToTemplate.size()));
-            Rule r = ruleGen.generateRule(this.maxRuleLen);
-            this.addRuleToModel(r);
+            int tries = 0;
+            Rule r;
+            do {
+                r = ruleGen.generateRule(this.maxRuleLen);
+                tries++;
+            }while (tries < NUM_TRIES_PER_RULE_DEFAULT && r == null);
+            if(r == null) {
+                throw new RuntimeException("Exceeded maximum number of tries for a rule");
+            }
+            //this.addRuleToModel(r);
+            log.info("Added rule: " + r.toString() );
         }
-        this.getNewWeightLearner().learn();
-        this.evaluator.compute(trainingMap);
+
+        //this.getNewWeightLearner().learn();
+        //this.evaluator.compute(trainingMap);
     }
 
     interface RandomRuleGenerator {
@@ -85,9 +96,9 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
     }
 
     static class PathRandomRuleGenerator extends PathRuleTemplate implements RandomRuleGenerator{
-        private List<Predicate> localCopyPredicates;
-        private List<Predicate> localCopyOpenPredicates;
-        private List<Predicate> localCopyClosedPredicates;
+        private List<StandardPredicate> localCopyPredicates;
+        private List<StandardPredicate> localCopyOpenPredicates;
+        private List<StandardPredicate> localCopyClosedPredicates;
 
         public PathRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates) {
             super(closedPredicates, openPredicates);
@@ -105,25 +116,51 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
         @Override
         public Rule generateRule(int maxRuleLen) {
             if (maxRuleLen < 3) {
-                throw new RuntimeException("Rule lenght must be greater than 2.");
+                throw new RuntimeException("Rule length must be greater than 2.");
             }
             int newRuleLen = RandUtils.nextInt(maxRuleLen-2) + 3;
-            List<Predicate> predicates = new ArrayList<>();
+            List<StandardPredicate> predicates = new ArrayList<>();
             List<Boolean> isNegated = new ArrayList<>();
-            for (int i = 0; i < newRuleLen - 1; i++) {
-                predicates.add(this.localCopyPredicates.get(RandUtils.nextInt(this.localCopyPredicates.size())));
-                isNegated.add(RandUtils.nextBoolean());
+
+            StandardPredicate headPredicate = this.localCopyOpenPredicates.get(RandUtils.nextInt(this.localCopyOpenPredicates.size()));
+            List<StandardPredicate> validPredicates = new ArrayList<>();
+            for (StandardPredicate p: this.localCopyPredicates) {
+                if (p.getDomains()[0].equals(headPredicate.getDomains()[0])) {
+                    validPredicates.add(p);
+                }
             }
-            predicates.add(this.localCopyOpenPredicates.get(RandUtils.nextInt(this.localCopyOpenPredicates.size())));
+
+            StandardPredicate nextPredicate = validPredicates.get(RandUtils.nextInt(validPredicates.size()));
+            predicates.add(nextPredicate);
+            isNegated.add(RandUtils.nextBoolean());
+            String prevDomain = nextPredicate.getDomains()[1];
+
+            for (int i = 1; i < newRuleLen - 1; i++) {
+                validPredicates = new ArrayList<>();
+                for (StandardPredicate p: this.localCopyPredicates) {
+                    if (p.getDomains()[0].equals(prevDomain)) {
+                        validPredicates.add(p);
+                    }
+                }
+                if (validPredicates.size() == 0) {
+                    log.debug("Failed to generate a rule");
+                    return null;
+                }
+                nextPredicate = validPredicates.get(RandUtils.nextInt(validPredicates.size()));
+                predicates.add(nextPredicate);
+                isNegated.add(RandUtils.nextBoolean());
+                prevDomain = nextPredicate.getDomains()[1];
+            }
+            predicates.add(headPredicate);
             isNegated.add(RandUtils.nextBoolean());
             return getRule(predicates, isNegated, true, 0);
         }
     }
 
     static class SimRandomRuleGenerator extends SimRuleTemplate implements RandomRuleGenerator{
-        private List<Predicate> localCopyPredicates;
-        private List<Predicate> localCopyOpenPredicates;
-        private List<Predicate> localCopyClosedPredicates;
+        private List<StandardPredicate> localCopyPredicates;
+        private List<StandardPredicate> localCopyOpenPredicates;
+        private List<StandardPredicate> localCopyClosedPredicates;
 
         public SimRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates) {
             super(closedPredicates, openPredicates);
@@ -140,23 +177,35 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
 
         @Override
         public Rule generateRule(int maxRuleLen) {
-            List<Predicate> predicates = new ArrayList<>();
+            List<StandardPredicate> predicates = new ArrayList<>();
             List<Boolean> isNegated = new ArrayList<>();
-            predicates.add(this.localCopyOpenPredicates.get(RandUtils.nextInt(this.localCopyOpenPredicates.size())));
+            StandardPredicate headPredicate = this.localCopyOpenPredicates.get(RandUtils.nextInt(this.localCopyOpenPredicates.size()));
+            String simDomain = headPredicate.getDomains()[0];
+            predicates.add(headPredicate);
             isNegated.add(RandUtils.nextBoolean());
-            predicates.add(this.localCopyClosedPredicates.get(RandUtils.nextInt(this.localCopyClosedPredicates.size())));
+            List<StandardPredicate> possiblePredicates = new ArrayList<>();
+            for (StandardPredicate p : this.localCopyClosedPredicates) {
+                if(p.getDomains()[0].equals(simDomain) && p.getDomains()[1].equals(simDomain)) {
+                    possiblePredicates.add(p);
+                }
+            }
+            if (possiblePredicates == null) {
+                log.debug("Failed to generate a rule");
+                return null;
+            }
+            predicates.add(possiblePredicates.get(RandUtils.nextInt(possiblePredicates.size())));
             isNegated.add(RandUtils.nextBoolean());
-            predicates.add(predicates.get(0));
+            predicates.add(headPredicate);
             isNegated.add(RandUtils.nextBoolean());
             return getRule(predicates, isNegated, true, 0);
         }
     }
 
     static class LocalRandomRuleGenerator extends LocalRuleTemplate implements RandomRuleGenerator{
-        private List<Predicate> localCopyPredicates;
-        private List<Predicate> localCopyOpenPredicates;
-        private List<Predicate> localCopyClosedPredicates;
-        private Map<Integer, List<Predicate>> arityToPredicates;
+        private List<StandardPredicate> localCopyPredicates;
+        private List<StandardPredicate> localCopyOpenPredicates;
+        private List<StandardPredicate> localCopyClosedPredicates;
+        private Map<Integer, List<StandardPredicate>> arityToPredicates;
 
         public LocalRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates) {
             super(closedPredicates, openPredicates);
@@ -170,8 +219,8 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
                 this.localCopyOpenPredicates.add(p);
             }
             this.arityToPredicates = new HashMap<>();
-            for (Predicate p: this.localCopyClosedPredicates){
-                List<Predicate> preds = this.arityToPredicates.get(p.getArity());
+            for (StandardPredicate p: this.localCopyClosedPredicates){
+                List<StandardPredicate> preds = this.arityToPredicates.get(p.getArity());
                 if (preds == null){
                     preds = new ArrayList<>();
                 }
@@ -186,17 +235,24 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
                 throw new RuntimeException("Rule lenght must be greater than 2.");
             }
             int newRuleLen = RandUtils.nextInt(maxRuleLen-1) + 2;
-            List<Predicate> predicates = new ArrayList<>();
+            List<StandardPredicate> predicates = new ArrayList<>();
             List<Boolean> isNegated = new ArrayList<>();
-            Predicate headPredicate = this.localCopyOpenPredicates.get(RandUtils.nextInt(this.localCopyOpenPredicates.size()));
+            StandardPredicate headPredicate = this.localCopyOpenPredicates.get(RandUtils.nextInt(this.localCopyOpenPredicates.size()));
             int chosenArity = headPredicate.getArity();
-            List<Predicate> possiblePredicates = this.arityToPredicates.get(chosenArity);
-            if (possiblePredicates == null) {
-                throw new RuntimeException("There is no closed predicate with same arity as open predicates.");
+            String[] chosenDomains = headPredicate.getDomains();
+            List<StandardPredicate> possiblePredicates = new ArrayList<>();
+            for (StandardPredicate p : this.arityToPredicates.get(chosenArity)) {
+                if(Arrays.equals(p.getDomains(), chosenDomains)) {
+                   possiblePredicates.add(p);
+                }
             }
-            Set<Predicate> usedPredicate = new HashSet<>();
+            if (possiblePredicates == null) {
+                log.debug("Failed to generate a rule");
+                return null;
+            }
+            Set<StandardPredicate> usedPredicate = new HashSet<>();
             for (int i = 0; i < newRuleLen - 1; i++) {
-                Predicate p = possiblePredicates.get(RandUtils.nextInt(possiblePredicates.size()));
+                StandardPredicate p = possiblePredicates.get(RandUtils.nextInt(possiblePredicates.size()));
                 if (usedPredicate.contains(p)){
                     break;
                 }

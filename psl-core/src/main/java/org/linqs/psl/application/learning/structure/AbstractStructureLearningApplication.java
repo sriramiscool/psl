@@ -88,6 +88,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
     protected final List<StandardPredicate> predicates;
     protected final Set<StandardPredicate> openPredicates;
     protected final Set<StandardPredicate> closedPredicates;
+    protected final Map<StandardPredicate, String[]> domains;
 
 
     protected Database rvDB;
@@ -130,17 +131,22 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
         this.rvDB = rvDB;
         this.observedDB = observedDB;
         List<StandardPredicate> predicates = new ArrayList<>();
+        Map<StandardPredicate, String[]> domains = new HashMap<StandardPredicate, String[]>();
+
         this.initialListOfRules = new ArrayList<>();
         for (StandardPredicate pred: closedPredicates){
             predicates.add(pred);
+            domains.put(pred, pred.getDomains());
         }
         for (StandardPredicate pred: openPredicates){
             predicates.add(pred);
+            domains.put(pred, pred.getDomains());
         }
+
         this.predicates = Collections.unmodifiableList(predicates);
         this.closedPredicates = Collections.unmodifiableSet(closedPredicates);
         this.openPredicates = Collections.unmodifiableSet(openPredicates);
-
+        this.domains = Collections.unmodifiableMap(domains);
 
         allRules = new ArrayList<Rule>();
         mutableRules = new ArrayList<WeightedRule>();
@@ -179,6 +185,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
      * variables.
      */
     public void learn() {
+
         // Sets up the ground model.
         initGroundModel();
 
@@ -438,7 +445,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
     }
 
     /**
-     * Construct a weight learning application given the data.
+     * Construct a structure learning application given the data.
      * Look for a constructor like: (List<Rule>, Database (rv), Database (observed)).
      */
     public static AbstractStructureLearningApplication getSLA(String name, List<Rule> rules,

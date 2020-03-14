@@ -321,6 +321,7 @@ public class Launcher {
         openPredicates.removeAll(closedPredicates);
         AbstractStructureLearningApplication learner = AbstractStructureLearningApplication.getSLA(slaName, rules,
                 randomVariableDatabase, observedTruthDatabase, closedPredicates, openPredicates);
+        log.info("Started rules learning with learner: " + slaName);
         learner.learn();
 
         if (parsedOptions.hasOption(CommandLineLoader.OPTION_OUTPUT_GROUND_RULES_LONG)) {

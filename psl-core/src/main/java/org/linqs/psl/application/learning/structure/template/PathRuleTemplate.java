@@ -24,12 +24,12 @@ import java.util.Set;
 public class PathRuleTemplate implements RuleTemplate {
     private static final Logger log = LoggerFactory.getLogger(PathRuleTemplate.class);
 
-    protected final Set<Predicate> predicates;
+    protected final Set<StandardPredicate> predicates;
     protected final Set<StandardPredicate> openPredicates;
     protected final Set<StandardPredicate> closedPredicates;
 
 
-    private static boolean checkRequirement(List<Predicate> predicates) {
+    private static boolean checkRequirement(List<StandardPredicate> predicates) {
         for (int i = 0; i < predicates.size() ; i++) {
             if (invalidPredicate(predicates.get(i))){
                 return false;
@@ -43,7 +43,7 @@ public class PathRuleTemplate implements RuleTemplate {
     }
 
     public PathRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates) {
-        Set<Predicate> predicates = new HashSet<>();
+        Set<StandardPredicate> predicates = new HashSet<>();
         Set<StandardPredicate> openPreds = new HashSet<>();
         Set<StandardPredicate> closedPreds = new HashSet<>();
         for (StandardPredicate p: closedPredicates){
@@ -64,19 +64,19 @@ public class PathRuleTemplate implements RuleTemplate {
         this.closedPredicates = Collections.unmodifiableSet(closedPreds);
     }
 
-    public Set<Predicate> getValidPredicates() {
+    public Set<StandardPredicate> getValidPredicates() {
         return predicates;
     }
 
     @Override
-    public boolean isValid(List<Predicate> predicates, List<Boolean> isNegated) {
+    public boolean isValid(List<StandardPredicate> predicates, List<Boolean> isNegated) {
         if (!checkRequirement(predicates) || !openPredicates.contains(predicates.get(predicates.size()-1))){
             return false;
         }
         return true;
     }
 
-    public Rule getRule(List<Predicate> predicates, List<Boolean> isNegated, boolean isSquared, double weight){
+    public Rule getRule(List<StandardPredicate> predicates, List<Boolean> isNegated, boolean isSquared, double weight){
         if (!isValid(predicates, isNegated)){
             throw new IllegalArgumentException("All predicates must have arity = 2.");
         }

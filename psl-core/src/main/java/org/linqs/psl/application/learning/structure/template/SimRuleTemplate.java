@@ -24,7 +24,7 @@ import java.util.Set;
 public class SimRuleTemplate implements RuleTemplate {
     private static final Logger log = LoggerFactory.getLogger(SimRuleTemplate.class);
 
-    protected final Set<Predicate> predicates;
+    protected final Set<StandardPredicate> predicates;
     protected final Set<StandardPredicate> openPredicates;
     protected final Set<StandardPredicate> closedPredicates;
     protected final Variable v1;
@@ -32,7 +32,7 @@ public class SimRuleTemplate implements RuleTemplate {
     protected final Variable v3;
 
 
-    private static boolean checkRequirement(List<Predicate> predicates) {
+    private static boolean checkRequirement(List<StandardPredicate> predicates) {
         for (int i = 0; i < predicates.size() ; i++) {
             if (invalidPredicate(predicates.get(i))){
                 return false;
@@ -46,7 +46,7 @@ public class SimRuleTemplate implements RuleTemplate {
     }
 
     public SimRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates) {
-        Set<Predicate> predicates = new HashSet<>();
+        Set<StandardPredicate> predicates = new HashSet<>();
         Set<StandardPredicate> openPreds = new HashSet<>();
         Set<StandardPredicate> closedPreds = new HashSet<>();
         for (StandardPredicate p: closedPredicates){
@@ -71,12 +71,12 @@ public class SimRuleTemplate implements RuleTemplate {
         v3 = new Variable("C");
     }
 
-    public Set<Predicate> getValidPredicates() {
+    public Set<StandardPredicate> getValidPredicates() {
         return predicates;
     }
 
     @Override
-    public boolean isValid(List<Predicate> predicates, List<Boolean> isNegated) {
+    public boolean isValid(List<StandardPredicate> predicates, List<Boolean> isNegated) {
         if (predicates.size() != 3 ||
                 predicates.get(2).getName() != predicates.get(0).getName() ||
                 !checkRequirement(predicates)){
@@ -85,7 +85,7 @@ public class SimRuleTemplate implements RuleTemplate {
         return true;
     }
 
-    public Rule getRule(List<Predicate> predicates, List<Boolean> isNegated, boolean isSquared, double weight){
+    public Rule getRule(List<StandardPredicate> predicates, List<Boolean> isNegated, boolean isSquared, double weight){
         if (!isValid(predicates, isNegated)){
             throw new IllegalArgumentException("Sim template needs three predicates with first and " +
                     "last the same and each with arity = 2.");

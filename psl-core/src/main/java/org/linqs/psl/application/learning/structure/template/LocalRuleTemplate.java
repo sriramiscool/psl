@@ -24,17 +24,17 @@ import java.util.Set;
 public class LocalRuleTemplate implements RuleTemplate {
     private static final Logger log = LoggerFactory.getLogger(LocalRuleTemplate.class);
 
-    protected final Set<Predicate> predicates;
+    protected final Set<StandardPredicate> predicates;
     protected final Set<StandardPredicate> openPredicates;
     protected final Set<StandardPredicate> closedPredicates;
 
     public LocalRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates) {
-        Set<Predicate> predicates = new HashSet<>();
-        for (Predicate p: closedPredicates){
+        Set<StandardPredicate> predicates = new HashSet<>();
+        for (StandardPredicate p: closedPredicates){
             predicates.add(p);
         }
 
-        for (Predicate p: openPredicates){
+        for (StandardPredicate p: openPredicates){
             predicates.add(p);
         }
         this.predicates = Collections.unmodifiableSet(predicates);
@@ -42,12 +42,12 @@ public class LocalRuleTemplate implements RuleTemplate {
         this.closedPredicates = Collections.unmodifiableSet(closedPredicates);
     }
 
-    public Set<Predicate> getValidPredicates() {
+    public Set<StandardPredicate> getValidPredicates() {
         return predicates;
     }
 
     @Override
-    public boolean isValid(List<Predicate> predicates, List<Boolean> isNegated) {
+    public boolean isValid(List<StandardPredicate> predicates, List<Boolean> isNegated) {
         int arity = predicates.get(0).getArity();
         int count = 0;
         for (Predicate p : predicates) {
@@ -62,7 +62,7 @@ public class LocalRuleTemplate implements RuleTemplate {
         return true;
     }
 
-    public Rule getRule(List<Predicate> predicates, List<Boolean> isNegated, boolean isSquared, double weight){
+    public Rule getRule(List<StandardPredicate> predicates, List<Boolean> isNegated, boolean isSquared, double weight){
         if (!isValid(predicates, isNegated)){
             throw new IllegalArgumentException("all predicates must have same arity and " +
                     "head must be open and body closed.");
