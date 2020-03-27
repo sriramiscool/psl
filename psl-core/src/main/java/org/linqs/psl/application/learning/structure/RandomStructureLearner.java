@@ -1,11 +1,13 @@
 package org.linqs.psl.application.learning.structure;
 
-import org.linqs.psl.application.learning.structure.template.*;
+import org.linqs.psl.application.learning.structure.template.LocalRuleTemplate;
+import org.linqs.psl.application.learning.structure.template.PathRuleTemplate;
+import org.linqs.psl.application.learning.structure.template.SimRuleTemplate;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
-import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.util.RandUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +22,7 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
 
     private static final String CONFIG_PREFIX = "rsl";
     private static final String ITERATIONS_KEY = CONFIG_PREFIX + ".iter";
-    private static final int ITERATIONS_DEFAULT = 10;
+    private static final int ITERATIONS_DEFAULT = 2;
     private static final String MAX_RULE_LEN_KEY = CONFIG_PREFIX + ".rulelen";
     private static final int MAX_RULE_LEN_DEFAULT = 3;
     private static final String NUM_RULES_KEY = CONFIG_PREFIX + ".numrules";
@@ -40,14 +42,17 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
         this.numIte = Config.getInt(ITERATIONS_KEY, ITERATIONS_DEFAULT);
         this.numRules = Config.getInt(NUM_RULES_KEY, NUM_RULES_DEFAULT);
         this.maxRuleLen = Config.getInt(MAX_RULE_LEN_KEY, MAX_RULE_LEN_DEFAULT);
+
         this.predicateToId = new HashMap<>();
-        for (int i = 0; i < this.predicates.size() ; i++) {
-            this.predicateToId.put(this.predicates.get(i), i);
-        }
         this.idToTemplate = new HashMap<>();
+
         this.idToTemplate.put(0, new PathRandomRuleGenerator(closedPredicates, openPredicates));
         this.idToTemplate.put(1, new SimRandomRuleGenerator(closedPredicates, openPredicates));
         this.idToTemplate.put(2, new LocalRandomRuleGenerator(closedPredicates, openPredicates));
+
+        for (int i = 0; i < this.predicates.size() ; i++) {
+            this.predicateToId.put(this.predicates.get(i), i);
+        }
     }
 
     @Override
@@ -83,12 +88,15 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
             if(r == null) {
                 throw new RuntimeException("Exceeded maximum number of tries for a rule");
             }
-            //this.addRuleToModel(r);
+            this.addRuleToModel(r);
             log.info("Added rule: " + r.toString() );
         }
 
         //this.getNewWeightLearner().learn();
-        //this.evaluator.compute(trainingMap);
+        for(WeightedRule r: this.mutableRules) {
+            r.setWeight(1);
+        }
+        this.evaluator.compute(trainingMap);
     }
 
     interface RandomRuleGenerator {
