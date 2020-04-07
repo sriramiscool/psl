@@ -272,6 +272,9 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
     }
 
     protected boolean addRuleToModel(Rule r){
+        if (allRules.contains(r)) {
+            return false;
+        }
         int count = r.groundAll(atomManager, groundRuleStore);
         log.debug("New rule: " + r + " generated " + count + " groundings.");
         allRules.add(r);
@@ -285,7 +288,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
         }
         int i = termGenerator.generateTerms(r, grules, termStore);
 
-        return false;
+        return true;
     }
 
 

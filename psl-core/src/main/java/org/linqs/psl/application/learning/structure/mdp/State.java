@@ -3,8 +3,10 @@ package org.linqs.psl.application.learning.structure.mdp;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.linqs.psl.application.learning.structure.rulegen.DRLRuleGenerator;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.WeightedRule;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,9 +23,11 @@ public class State implements Encodable {
     private boolean inRule;
     private DRLRuleGenerator currentTemplate;
     private StandardPredicate currentTargetPredicate;
-    private ArrayList<StandardPredicate> rulePredicates;
+    private List<StandardPredicate> rulePredicates;
+    private List<Boolean> isNegated;
     private Map<Integer, DRLRuleGenerator> idToTemplate;
     private Map<Integer, StandardPredicate> idToPredicate;
+    private List<WeightedRule> rules;
 
     State(int numRules, int ruleLength, int numActions, Map<Integer, DRLRuleGenerator> idToTemplate, Map<Integer, StandardPredicate> idToPredicate) {
 
@@ -38,13 +42,26 @@ public class State implements Encodable {
         this.idToPredicate = idToPredicate;
         this.idToTemplate = idToTemplate;
         this.currentTargetPredicate = null;
+        this.rules = new ArrayList<>();
+        this.isNegated = new ArrayList<>();
     }
+    private WeightedRule getRule(){
+        List<StandardPredicate> body = new ArrayList<>();
+        body.addAll(rulePredicates);
+        body.remove(0);
+        StandardPredicate head = rulePredicates.get(0);
+        return (WeightedRule) this.currentTemplate.generateRule(head, body, isNegated);
+    }
+
 
     public void updateState(double val){
         Integer value = new Integer((int)val);
         this.state[this.pos + (int)val] = 1;
         this.pos += numActions;
         if(idToTemplate.containsKey(value)) {
+            if (this.currentTemplate != null) {
+                rules.add(getRule());
+            }
             this.inRule = true;
             this.currentTemplate = idToTemplate.get(value);
             this.rulePredicates = new ArrayList<>();
@@ -52,6 +69,8 @@ public class State implements Encodable {
         }
         else {
             this.rulePredicates.add(idToPredicate.get(value));
+            //for now all positive.
+            this.isNegated.add(false);
             //Check if end of rule
             if((this.pos % (numActions*ruleLength)) == 0) {
                 this.inRule = false;
@@ -75,8 +94,19 @@ public class State implements Encodable {
         return currentTemplate;
     }
 
-    public ArrayList<StandardPredicate> getRulePredicates() {
+    public List<StandardPredicate> getRulePredicates() {
         return rulePredicates;
+    }
+
+    public List<WeightedRule> getRules(){
+        if (this.currentTemplate!=null) {
+            rules.add(getRule());
+            this.currentTemplate = null;
+            this.rulePredicates = new ArrayList<>();
+            this.currentTargetPredicate = null;
+
+        }
+        return rules;
     }
     @Override
     public double[] toArray() {
@@ -99,6 +129,8 @@ public class State implements Encodable {
         this.inRule = false;
         this.currentTemplate = null;
         this.rulePredicates = new ArrayList<>();
+        this.rules.clear();
+        this.isNegated.clear();
         return this;
     }
 }

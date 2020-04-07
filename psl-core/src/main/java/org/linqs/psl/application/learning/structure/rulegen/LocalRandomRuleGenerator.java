@@ -75,8 +75,22 @@ public class LocalRandomRuleGenerator extends LocalRuleTemplate implements DRLRu
         return getRule(predicates, isNegated, true, 0);
     }
 
+
     @Override
-    public boolean isValid(StandardPredicate targetPredicate, ArrayList<StandardPredicate> rulePredicates, StandardPredicate action) {
+    public Rule generateRule(StandardPredicate headPredicate, List<StandardPredicate> bodyPredicates,
+                             List<Boolean> isNegated) {
+        if (bodyPredicates == null || headPredicate == null || bodyPredicates.size() < 1) {
+            throw new RuntimeException("Rule length must be greater than 2.");
+        }
+        List<StandardPredicate> predicates = new ArrayList<>();
+
+        predicates.addAll(bodyPredicates);
+        predicates.add(headPredicate);
+        return getRule(predicates, isNegated, true, 0);
+    }
+
+    @Override
+    public boolean isValid(StandardPredicate targetPredicate, List<StandardPredicate> rulePredicates, StandardPredicate action) {
 
 
         String[] chosenDomains = targetPredicate.getDomains();

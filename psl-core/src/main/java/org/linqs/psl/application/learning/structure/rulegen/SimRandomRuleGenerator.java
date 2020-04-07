@@ -33,6 +33,20 @@ public class SimRandomRuleGenerator extends SimRuleTemplate implements DRLRuleGe
     }
 
     @Override
+    public Rule generateRule(StandardPredicate headPredicate, List<StandardPredicate> bodyPredicates,
+                             List<Boolean> isNegated) {
+        if (bodyPredicates == null || headPredicate == null || bodyPredicates.size() != 2) {
+            throw new RuntimeException("Rule length must be greater than 2.");
+        }
+        List<StandardPredicate> predicates = new ArrayList<>();
+
+        predicates.addAll(bodyPredicates);
+        predicates.add(headPredicate);
+        isNegated.add(isNegated.get(0));
+        return getRule(predicates, isNegated, true, 0);
+    }
+
+    @Override
     public Rule generateRule(int maxRuleLen) {
         List<StandardPredicate> predicates = new ArrayList<>();
         List<Boolean> isNegated = new ArrayList<>();
@@ -58,7 +72,7 @@ public class SimRandomRuleGenerator extends SimRuleTemplate implements DRLRuleGe
     }
 
     @Override
-    public boolean isValid(StandardPredicate targetPredicate, ArrayList<StandardPredicate> rulePredicates, StandardPredicate action) {
+    public boolean isValid(StandardPredicate targetPredicate, List<StandardPredicate> rulePredicates, StandardPredicate action) {
         int currentRuleLength = rulePredicates.size();
         boolean isValidFlag = false;
 

@@ -13,9 +13,7 @@ import org.json.JSONObject;
 import org.linqs.psl.application.learning.structure.rulegen.DRLRuleGenerator;
 import org.linqs.psl.model.predicate.StandardPredicate;
 
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 public class StructureLearner implements MDP<State, Integer, DiscreteSpace> {
@@ -33,6 +31,7 @@ public class StructureLearner implements MDP<State, Integer, DiscreteSpace> {
     private State state;
     private NeuralNetFetchable<IDQN> fetchable;
     private boolean isDone;
+
 
     public StructureLearner(int numRules, int ruleLength, Map<Integer, DRLRuleGenerator> idToTemplate, Map<Integer, StandardPredicate> idToPredicate, Set<StandardPredicate> openPredicates) {
         this.numTemplates = idToTemplate.size();
@@ -77,25 +76,34 @@ public class StructureLearner implements MDP<State, Integer, DiscreteSpace> {
                 isValid =  true;
             }
         }
-        else if(a.intValue() > numTemplates) {
-            if (this.state.getInRule()) {
-                DRLRuleGenerator template = this.state.getCurrentRuleTemplate();
-                StandardPredicate selectedPredicate = idToPredicate.get(a);
-                if (this.state.getCurrentTargetPredicate() == null) {
-                    if (this.openPredicates.contains(selectedPredicate)) {
-                        isValid = true;
-                    }
+        else if (this.state.getInRule()) {
+            DRLRuleGenerator template = this.state.getCurrentRuleTemplate();
+            StandardPredicate selectedPredicate = idToPredicate.get(a);
+            if (this.state.getCurrentTargetPredicate() == null) {
+                if (this.openPredicates.contains(selectedPredicate)) {
+                    isValid = true;
                 }
-                else {
-                    ArrayList<StandardPredicate> rulePredicates = this.state.getRulePredicates();
-                    StandardPredicate targetPredicate = this.state.getCurrentTargetPredicate();
-                    if(template.isValid(targetPredicate, rulePredicates, selectedPredicate)) {
-                        isValid =  true;
-                    }
+            }
+            else {
+                List<StandardPredicate> rulePredicates = this.state.getRulePredicates();
+                StandardPredicate targetPredicate = this.state.getCurrentTargetPredicate();
+                if(template.isValid(targetPredicate, rulePredicates, selectedPredicate)) {
+                    isValid =  true;
                 }
             }
         }
+
         return isValid;
+    }
+
+    public Set<Integer> getValidActions(){
+        Set<Integer> val = new HashSet<>();
+        for (int i = 0 ; i < this.numActions ; i++){
+            if (checkValidAction(i)){
+                val.add(i);
+            }
+        }
+        return val;
     }
 
     public StepReply<State> step(Integer a) {

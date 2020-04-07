@@ -51,7 +51,7 @@ public class LocalRuleTemplate implements RuleTemplate {
         int arity = predicates.get(0).getArity();
         int count = 0;
         for (Predicate p : predicates) {
-            if (p.getArity() != arity || (count < predicates.size()-1 && !closedPredicates.contains(p))){
+            if (p.getArity() != arity){// || (count < predicates.size()-1 && !closedPredicates.contains(p))){
                 return false;
             }
             count++;
@@ -67,14 +67,20 @@ public class LocalRuleTemplate implements RuleTemplate {
             throw new IllegalArgumentException("all predicates must have same arity and " +
                     "head must be open and body closed.");
         }
-        Formula[] qatoms = new Formula[predicates.size()-1];
+        Set<StandardPredicate> set = new HashSet<>();
+        for(int i = 0 ; i < predicates.size()-1; i++){
+            set.add(predicates.get(i));
+        }
+        Formula[] qatoms = new Formula[set.size()];
         Variable[] vars = new Variable[predicates.get(0).getArity()];
         for (int i = 0; i < vars.length; i++) {
             vars[i] = new Variable("A" + Integer.toString(i));
         }
-        for (int i = 0; i < qatoms.length; i++) {
-            qatoms[i] = new QueryAtom(predicates.get(i), vars);
-            //qatoms[i] = isNegated.get(i) ? new Negation(qatoms[i]):qatoms[i];
+        int i = 0;
+        for (StandardPredicate s:set) {
+            qatoms[i] = new QueryAtom(s, vars);
+            qatoms[i] = isNegated.get(i) ? new Negation(qatoms[i]):qatoms[i];
+            i++;
         }
         Formula head = new QueryAtom(predicates.get(predicates.size()-1), vars);
         head = isNegated.get(predicates.size()-1) ? new Negation(head):head;

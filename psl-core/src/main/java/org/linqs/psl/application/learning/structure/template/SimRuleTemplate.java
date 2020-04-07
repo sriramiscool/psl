@@ -13,10 +13,7 @@ import org.linqs.psl.model.term.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by sriramsrinivasan on 12/1/19.
@@ -78,7 +75,7 @@ public class SimRuleTemplate implements RuleTemplate {
     @Override
     public boolean isValid(List<StandardPredicate> predicates, List<Boolean> isNegated) {
         if (predicates.size() != 3 ||
-                predicates.get(2).getName() != predicates.get(0).getName() ||
+                !Arrays.equals(predicates.get(2).getDomains(), predicates.get(1).getDomains()) ||
                 !checkRequirement(predicates)){
             return false;
         }

@@ -20,12 +20,12 @@ function main() {
    getData
 
    # Make sure we can run PSL.
-   check_requirements
-   fetch_psl
+   #check_requirements
+   #fetch_psl
 
    # Run PSL
-   runWeightLearning "$@"
-   runEvaluation "$@"
+   #runWeightLearning "$@"
+   #runEvaluation "$@"
 }
 
 function getData() {
