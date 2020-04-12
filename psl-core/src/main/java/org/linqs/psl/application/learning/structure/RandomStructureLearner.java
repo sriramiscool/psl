@@ -1,9 +1,6 @@
 package org.linqs.psl.application.learning.structure;
 
-import org.linqs.psl.application.learning.structure.rulegen.LocalRandomRuleGenerator;
-import org.linqs.psl.application.learning.structure.rulegen.PathRandomRuleGenerator;
-import org.linqs.psl.application.learning.structure.rulegen.RandomRuleGenerator;
-import org.linqs.psl.application.learning.structure.rulegen.SimRandomRuleGenerator;
+import org.linqs.psl.application.learning.structure.rulegen.*;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
@@ -26,7 +23,7 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
 
     private static final String CONFIG_PREFIX = "rsl";
     private static final String ITERATIONS_KEY = CONFIG_PREFIX + ".iter";
-    private static final int ITERATIONS_DEFAULT = 20;
+    private static final int ITERATIONS_DEFAULT = 2;
     private static final String MAX_RULE_LEN_KEY = CONFIG_PREFIX + ".rulelen";
     private static final int MAX_RULE_LEN_DEFAULT = 3;
     private static final String NUM_RULES_KEY = CONFIG_PREFIX + ".numrules";
@@ -88,6 +85,7 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
         this.idToTemplate.put(0, new PathRandomRuleGenerator(closedPredicates, openPredicates, open2BlockPred));
         this.idToTemplate.put(1, new SimRandomRuleGenerator(closedPredicates, openPredicates, open2BlockPred));
         this.idToTemplate.put(2, new LocalRandomRuleGenerator(closedPredicates, openPredicates, open2BlockPred));
+        this.idToTemplate.put(3, new PriorRandomRuleGenerator(closedPredicates, openPredicates, open2BlockPred));
     }
 
     @Override
