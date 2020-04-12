@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2019 The Regents of the University of California
+ * Copyright 2013-2020 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,5 +41,11 @@ public class ConstantNumber extends Coefficient {
     @Override
     public Coefficient simplify() {
         return this;
+    }
+
+    @Override
+    public int hashCode() {
+        // This method is allso sufficient for equals().
+        return Float.floatToIntBits(value);
     }
 }

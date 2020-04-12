@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2019 The Regents of the University of California
+ * Copyright 2013-2020 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,10 @@
  */
 package org.linqs.psl.model.rule.arithmetic.expression.coefficient;
 
-import java.util.Map;
-import java.util.Set;
-
 import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
-import org.linqs.psl.model.term.Constant;
+
+import java.util.Map;
 
 /**
  * Numeric coefficient in a {@link ArithmeticRuleExpression}.
@@ -45,4 +43,17 @@ public abstract class Coefficient {
      * Get a simplified version of this Coefficient, the Coefficient itself if it cannot be simplified further.
      */
     public abstract Coefficient simplify();
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+
+        if (other == null || this.getClass() != other.getClass()) {
+            return false;
+        }
+
+        return this.hashCode() == other.hashCode();
+    }
 }

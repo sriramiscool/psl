@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2019 The Regents of the University of California
+ * Copyright 2013-2020 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,9 @@
  */
 package org.linqs.psl.model.rule.arithmetic;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.linqs.psl.PSLTest;
 import org.linqs.psl.database.DataStore;
 import org.linqs.psl.database.Database;
@@ -36,33 +34,16 @@ import org.linqs.psl.model.formula.Disjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.arithmetic.AbstractArithmeticRule;
-import org.linqs.psl.model.rule.arithmetic.UnweightedArithmeticRule;
-import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
-import org.linqs.psl.model.rule.arithmetic.expression.SummationAtom;
-import org.linqs.psl.model.rule.arithmetic.expression.SummationAtomOrAtom;
-import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
-import org.linqs.psl.model.rule.arithmetic.expression.SummationVariableOrTerm;
-import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Cardinality;
-import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Coefficient;
-import org.linqs.psl.model.rule.arithmetic.expression.coefficient.ConstantNumber;
-import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Max;
-import org.linqs.psl.model.rule.arithmetic.expression.coefficient.Min;
+import org.linqs.psl.model.rule.arithmetic.expression.*;
+import org.linqs.psl.model.rule.arithmetic.expression.coefficient.*;
 import org.linqs.psl.model.term.ConstantType;
 import org.linqs.psl.model.term.UniqueStringID;
 import org.linqs.psl.model.term.Variable;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import java.util.*;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import static org.junit.Assert.*;
 
 public class AbstractArithmeticRuleTest {
     private DataStore dataStore;
@@ -101,13 +82,13 @@ public class AbstractArithmeticRuleTest {
     public void testBase() {
         // SingleClosed(A) + SingleClosed(B) = 1
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1)),
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1)),
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A"))),
-            (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("B")))
+                (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A"))),
+                (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("B")))
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
@@ -121,13 +102,13 @@ public class AbstractArithmeticRuleTest {
         // SingleClosed(+A) + SingleClosed(+A) = 1
         // Cannot use a sum variable multiple times in a rule.
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1)),
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1)),
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
         );
 
         try {
@@ -143,14 +124,14 @@ public class AbstractArithmeticRuleTest {
     public void testSumWithConstant() {
         // DoubleClosed(+A, 'Foo') = 1
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(doubleClosed, new SummationVariableOrTerm[]{
-                new SummationVariable("A"),
-                new UniqueStringID("Foo")
-            }))
+                (SummationAtomOrAtom)(new SummationAtom(doubleClosed, new SummationVariableOrTerm[]{
+                        new SummationVariable("A"),
+                        new UniqueStringID("Foo")
+                }))
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
@@ -163,13 +144,13 @@ public class AbstractArithmeticRuleTest {
     public void testMultipleSumsNoDuplicates() {
         // SingleClosed(+A) + SingleClosed(+B) = 1
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1)),
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1)),
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("B")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("B")}))
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
@@ -184,13 +165,13 @@ public class AbstractArithmeticRuleTest {
         // SingleClosed(+A) + SingleClosed(A) = 1
         // This will fail since A is supposed to be a summation variable and cannot be used as a term.
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1)),
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1)),
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
-            (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A")))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
+                (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A")))
         );
 
         try {
@@ -206,11 +187,11 @@ public class AbstractArithmeticRuleTest {
     public void testSingleFilter() {
         // SingleClosed(+A) = 1 . {A: SingleClosed(A)}
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
         );
 
         Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
@@ -219,7 +200,9 @@ public class AbstractArithmeticRuleTest {
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(expression, filters);
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : SINGLECLOSED(A)}");
     }
 
@@ -227,11 +210,11 @@ public class AbstractArithmeticRuleTest {
     public void testDisjunctiveFilter() {
         // SingleClosed(+A) = 1 . {A: SingleClosed(A) || DoubleClosed(A, A) }
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
         );
 
         Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
@@ -245,7 +228,9 @@ public class AbstractArithmeticRuleTest {
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(expression, filters);
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : ( SINGLECLOSED(A) | DOUBLECLOSED(A, A) )}", true);
     }
 
@@ -253,15 +238,15 @@ public class AbstractArithmeticRuleTest {
     public void testSingleFilterDifferentVariable() {
         // DoubleClosed(+A, B) = 1 . {A: SingleClosed(B)}
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(doubleClosed, new SummationVariableOrTerm[]{
-                new SummationVariable("A"),
-                new Variable("B")
-            })),
-            (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("B")))
+                (SummationAtomOrAtom)(new SummationAtom(doubleClosed, new SummationVariableOrTerm[]{
+                        new SummationVariable("A"),
+                        new Variable("B")
+                })),
+                (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("B")))
         );
 
         Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
@@ -270,7 +255,9 @@ public class AbstractArithmeticRuleTest {
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(expression, filters);
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "1.0 * DOUBLECLOSED(+A, B) = 1.0 .   {A : SINGLECLOSED(B)}");
     }
 
@@ -278,13 +265,13 @@ public class AbstractArithmeticRuleTest {
     public void testMultipleFilters() {
         // SingleClosed(+A) + SingleClosed(+B) = 1 . {A: SingleClosed(A)} {B: SingleClosed(B)}
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1)),
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1)),
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("B")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("B")}))
         );
 
         Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
@@ -294,7 +281,9 @@ public class AbstractArithmeticRuleTest {
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1));
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(expression, filters);
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(expression, filters);
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .   {A : SINGLECLOSED(A)}   {B : SINGLECLOSED(B)}", true);
     }
 
@@ -303,11 +292,11 @@ public class AbstractArithmeticRuleTest {
         // SingleClosed(+A) = 1 . {B: SingleClosed(B)}
         // Fail: the filter argument (B) is unknown.
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
         );
 
         Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
@@ -329,11 +318,11 @@ public class AbstractArithmeticRuleTest {
         // SingleClosed(+A) = 1 . {A: SingleClosed(B)}
         // Fail: a variable in the filter does not appear in the arithmetic expression.
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
         );
 
         Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
@@ -355,11 +344,11 @@ public class AbstractArithmeticRuleTest {
         // SingleClosed(A) = 1 . {A: SingleClosed(A)}
         // Fail: a filter requires a summation atom.
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A")))
+                (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A")))
         );
 
         Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
@@ -381,14 +370,14 @@ public class AbstractArithmeticRuleTest {
         // DoubleClosed(+A, B) = 1 . {B: SingleClosed(A)}
         // Fail: filter arguments must be summation variable.
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(doubleClosed, new SummationVariableOrTerm[]{
-                new SummationVariable("A"),
-                new Variable("B")
-            }))
+                (SummationAtomOrAtom)(new SummationAtom(doubleClosed, new SummationVariableOrTerm[]{
+                        new SummationVariable("A"),
+                        new Variable("B")
+                }))
         );
 
         Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
@@ -410,11 +399,11 @@ public class AbstractArithmeticRuleTest {
         // SingleClosed(+A) = 1 . {A: SingleOpened(A)}
         // Fail: predicates in filter must be closed.
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
         );
 
         Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
@@ -439,16 +428,19 @@ public class AbstractArithmeticRuleTest {
     public void testSimpleCardinality() {
         // |A| SingleClosed(+A) = 1
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new Cardinality(new SummationVariable("A")))
+                (Coefficient)(new Cardinality(new SummationVariable("A")))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "|A| * SINGLECLOSED(+A) = 1.0 .");
     }
 
@@ -456,16 +448,19 @@ public class AbstractArithmeticRuleTest {
     public void testDoubleCardinality() {
         // |A| SingleClosed(+A) = |A|
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new Cardinality(new SummationVariable("A")))
+                (Coefficient)(new Cardinality(new SummationVariable("A")))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new Cardinality(new SummationVariable("A"))));
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new Cardinality(new SummationVariable("A"))));
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "|A| * SINGLECLOSED(+A) = |A| .");
     }
 
@@ -473,18 +468,21 @@ public class AbstractArithmeticRuleTest {
     public void testTwoCardinalitySummations() {
         // |A| SingleClosed(+A) + |B| SingleClosed(+B) = 1
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new Cardinality(new SummationVariable("A"))),
-            (Coefficient)(new Cardinality(new SummationVariable("B")))
+                (Coefficient)(new Cardinality(new SummationVariable("A"))),
+                (Coefficient)(new Cardinality(new SummationVariable("B")))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("B")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("B")}))
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "|A| * SINGLECLOSED(+A) + |B| * SINGLECLOSED(+B) = 1.0 .", true);
     }
 
@@ -493,11 +491,11 @@ public class AbstractArithmeticRuleTest {
         // |A| SingleClosed(A) = 1
         // Fail: Cardinality is only valid on a summation variable.
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new Cardinality(new SummationVariable("A")))
+                (Coefficient)(new Cardinality(new SummationVariable("A")))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A")))
+                (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A")))
         );
 
         try {
@@ -513,16 +511,19 @@ public class AbstractArithmeticRuleTest {
     public void testSimpleCoefficientFunction() {
         // @Max[|A|, 0] SingleClosed(+A) = 1
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new Max(new Cardinality(new SummationVariable("A")), new ConstantNumber(0)))
+                (Coefficient)(new Max(new Cardinality(new SummationVariable("A")), new ConstantNumber(0)))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "@Max[|A|, 0.0] * SINGLECLOSED(+A) = 1.0 .");
     }
 
@@ -530,16 +531,19 @@ public class AbstractArithmeticRuleTest {
     public void testCoefficientFunctionNoCardinality() {
         // @Max[1, 0] SingleClosed(+A) = 1
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new Max(new ConstantNumber(1), new ConstantNumber(0)))
+                (Coefficient)(new Max(new ConstantNumber(1), new ConstantNumber(0)))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "@Max[1.0, 0.0] * SINGLECLOSED(+A) = 1.0 .");
     }
 
@@ -547,18 +551,21 @@ public class AbstractArithmeticRuleTest {
     public void testCoefficientFunctionAllCardinality() {
         // @Max[|A|, |B|] SingleClosed(+A) + SingleClosed(+B) = 1
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new Max(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B")))),
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new Max(new Cardinality(new SummationVariable("A")), new Cardinality(new SummationVariable("B")))),
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("B")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("B")}))
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "@Max[|A|, |B|] * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .", true);
     }
 
@@ -566,16 +573,19 @@ public class AbstractArithmeticRuleTest {
     public void testCoefficientFunctionNoSummation() {
         // @Min[1, 0] SingleClosed(A) = 1
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new Min(new ConstantNumber(1), new ConstantNumber(0)))
+                (Coefficient)(new Min(new ConstantNumber(1), new ConstantNumber(0)))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A")))
+                (SummationAtomOrAtom)(new QueryAtom(singleClosed, new Variable("A")))
         );
 
         AbstractArithmeticRule rule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
                 coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
+        AbstractArithmeticRule equalityTestRule = new UnweightedArithmeticRule(new ArithmeticRuleExpression(
+                coefficients, atoms, FunctionComparator.EQ, new ConstantNumber(1)));
 
+        assertEquals(rule, equalityTestRule);
         PSLTest.assertRule(rule, "@Min[1.0, 0.0] * SINGLECLOSED(A) = 1.0 .");
     }
 
@@ -626,11 +636,11 @@ public class AbstractArithmeticRuleTest {
     public void testSimpleSplit() {
         // SingleClosed(+A) = 1 . {A: SingleClosed(A) || DoubleClosed(A, A) }
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")}))
         );
 
         Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
@@ -649,8 +659,8 @@ public class AbstractArithmeticRuleTest {
         // SingleClosed(+A) = 1 . {A: SingleClosed(A) }
         // SingleClosed(+A) = 1 . {A: DoubleClosed(A, A) }
         String[] expected = new String[]{
-            "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : SINGLECLOSED(A)}",
-            "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : DOUBLECLOSED(A, A)}",
+                "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : SINGLECLOSED(A)}",
+                "1.0 * SINGLECLOSED(+A) = 1.0 .   {A : DOUBLECLOSED(A, A)}",
         };
 
         assertTrue(rule.requiresSplit());
@@ -670,13 +680,13 @@ public class AbstractArithmeticRuleTest {
     public void testConjunctiveSplit() {
         // SingleClosed(+A) + SingleClosed(+B) = 1 . {A: SingleClosed(A) || DoubleClosed(A, A) } {B: SingleClosed(B)}
         List<Coefficient> coefficients = Arrays.asList(
-            (Coefficient)(new ConstantNumber(1)),
-            (Coefficient)(new ConstantNumber(1))
+                (Coefficient)(new ConstantNumber(1)),
+                (Coefficient)(new ConstantNumber(1))
         );
 
         List<SummationAtomOrAtom> atoms = Arrays.asList(
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
-            (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("B")}))
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("A")})),
+                (SummationAtomOrAtom)(new SummationAtom(singleClosed, new SummationVariableOrTerm[]{new SummationVariable("B")}))
         );
 
         Map<SummationVariable, Formula> filters = new HashMap<SummationVariable, Formula>();
@@ -696,8 +706,8 @@ public class AbstractArithmeticRuleTest {
         // SingleClosed(+A) = 1 . {A: SingleClosed(A) } {B: SingleClosed(B)}
         // SingleClosed(+A) = 1 . {A: DoubleClosed(A, A) } {B: SingleClosed(B)}
         String[] expected = new String[]{
-            "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .   {A : SINGLECLOSED(A)}   {B : SINGLECLOSED(B)}",
-            "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .   {A : DOUBLECLOSED(A, A)}   {B : SINGLECLOSED(B)}",
+                "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .   {A : SINGLECLOSED(A)}   {B : SINGLECLOSED(B)}",
+                "1.0 * SINGLECLOSED(+A) + 1.0 * SINGLECLOSED(+B) = 1.0 .   {A : DOUBLECLOSED(A, A)}   {B : SINGLECLOSED(B)}",
         };
 
         assertTrue(rule.requiresSplit());

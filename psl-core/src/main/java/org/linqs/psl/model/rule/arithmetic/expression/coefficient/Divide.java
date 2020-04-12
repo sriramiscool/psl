@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2019 The Regents of the University of California
+ * Copyright 2013-2020 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,10 @@
  */
 package org.linqs.psl.model.rule.arithmetic.expression.coefficient;
 
-import java.util.Map;
-import java.util.Set;
-
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
-import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.util.MathUtils;
+
+import java.util.Map;
 
 /**
  * A coefficient to represent division.
@@ -31,13 +29,9 @@ import org.linqs.psl.util.MathUtils;
  *  - When simplifying
  *  - when getting the actual value (using actual values)
  */
-public class Divide extends Coefficient {
-    protected final Coefficient c1;
-    protected final Coefficient c2;
-
+public class Divide extends BinaryCoefficient {
     public Divide(Coefficient c1, Coefficient c2) {
-        this.c1 = c1;
-        this.c2 = c2;
+        super(c1, c2);
 
         // If the denoinator is 0, then throw an exception.
         if (c2 instanceof ConstantNumber && MathUtils.isZero(((ConstantNumber)c2).value)) {

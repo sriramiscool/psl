@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2019 The Regents of the University of California
+ * Copyright 2013-2020 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,14 @@
  */
 package org.linqs.psl.model.rule.arithmetic.expression.coefficient;
 
-import java.util.Map;
-import java.util.Set;
-
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
-import org.linqs.psl.model.term.Constant;
+
+import java.util.Map;
 
 /**
  * The number of substitutions made for a {@link SummationVariable} in a grounding.
  */
 public class Cardinality extends Coefficient {
-
     protected final SummationVariable v;
 
     public Cardinality(SummationVariable v) {
@@ -51,5 +48,19 @@ public class Cardinality extends Coefficient {
     @Override
     public Coefficient simplify() {
         return this;
+    }
+
+    @Override
+    public int hashCode() {
+        return v.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (!super.equals(other)) {
+            return false;
+        }
+
+        return this.v.equals(((Cardinality)other).v);
     }
 }

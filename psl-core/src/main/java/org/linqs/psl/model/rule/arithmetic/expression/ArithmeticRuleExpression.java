@@ -1,7 +1,7 @@
 /*
  * This file is part of the PSL software.
  * Copyright 2011-2015 University of Maryland
- * Copyright 2013-2019 The Regents of the University of California
+ * Copyright 2013-2020 The Regents of the University of California
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,14 +52,14 @@ public class ArithmeticRuleExpression {
     private int hash;
 
     public ArithmeticRuleExpression(List<Coefficient> coefficients, List<SummationAtomOrAtom> atoms,
-            FunctionComparator comparator, Coefficient constant) {
+                                    FunctionComparator comparator, Coefficient constant) {
         this(coefficients, atoms, comparator, constant, false);
     }
 
     // Only skip cardinality validation if you know what you are doing and already validated the input.
     public ArithmeticRuleExpression(List<Coefficient> coefficients, List<SummationAtomOrAtom> atoms,
-            FunctionComparator comparator, Coefficient constant,
-            boolean skipCardinalityValidation) {
+                                    FunctionComparator comparator, Coefficient constant,
+                                    boolean skipCardinalityValidation) {
         this.coefficients = Collections.unmodifiableList(coefficients);
         this.atoms = Collections.unmodifiableList(atoms);
         this.comparator = comparator;
@@ -114,7 +114,7 @@ public class ArithmeticRuleExpression {
                     if (!sumVarNames.contains(name)) {
                         throw new IllegalArgumentException(String.format(
                                 "Cannot use variable (%s) in cardinality. " +
-                                "Only summation variables can be used in cardinality.",
+                                        "Only summation variables can be used in cardinality.",
                                 name));
                     }
                 }
@@ -244,11 +244,15 @@ public class ArithmeticRuleExpression {
             return false;
         }
 
-        if (this.comparator != otherExpression.comparator || this.constant != otherExpression.constant) {
+        if (this.comparator != otherExpression.comparator) {
             return false;
         }
 
         if (this.atoms.size() != otherExpression.atoms.size()) {
+            return false;
+        }
+
+        if (!this.constant.equals(otherExpression.constant)) {
             return false;
         }
 

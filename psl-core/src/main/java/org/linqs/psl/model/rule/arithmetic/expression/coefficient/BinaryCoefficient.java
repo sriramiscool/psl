@@ -17,35 +17,29 @@
  */
 package org.linqs.psl.model.rule.arithmetic.expression.coefficient;
 
-import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
+import org.linqs.psl.util.HashCode;
 
-import java.util.Map;
+public abstract class BinaryCoefficient extends Coefficient {
+    protected final Coefficient c1;
+    protected final Coefficient c2;
 
-public class Max extends BinaryCoefficient {
-    public Max(Coefficient c1, Coefficient c2) {
-        super(c1, c2);
+    public BinaryCoefficient(Coefficient c1, Coefficient c2) {
+        this.c1 = c1;
+        this.c2 = c2;
     }
 
     @Override
-    public float getValue(Map<SummationVariable, Integer> subs) {
-        return (float)Math.max(c1.getValue(subs), c2.getValue(subs));
+    public int hashCode() {
+        return HashCode.build(HashCode.build(HashCode.build(this.getClass()), c1), c2);
     }
 
     @Override
-    public String toString() {
-        return "@Max[" + c1.toString() + ", " + c2.toString() + "]";
-    }
-
-    @Override
-    public Coefficient simplify() {
-        Coefficient lhs = c1.simplify();
-        Coefficient rhs = c2.simplify();
-
-        // If both sides are constants, then just do the math.
-        if (lhs instanceof ConstantNumber && rhs instanceof ConstantNumber) {
-            return new ConstantNumber(getValue(null));
+    public boolean equals(Object other) {
+        if (!super.equals(other)) {
+            return false;
         }
 
-        return new Max(lhs, rhs);
+        BinaryCoefficient otherBinary = (BinaryCoefficient)other;
+        return this.c1.equals(otherBinary.c1) && this.c2.equals(otherBinary.c2);
     }
 }
