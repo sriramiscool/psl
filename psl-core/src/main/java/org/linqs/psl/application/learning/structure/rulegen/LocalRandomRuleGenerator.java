@@ -9,16 +9,23 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class LocalRandomRuleGenerator extends LocalRuleTemplate implements DRLRuleGenerator{
+public class LocalRandomRuleGenerator extends LocalRuleTemplate implements DRLRuleGenerator,RandomRuleGenerator{
     private static final Logger log = LoggerFactory.getLogger(LocalRandomRuleGenerator.class);
 
     private List<StandardPredicate> localCopyPredicates;
     private List<StandardPredicate> localCopyOpenPredicates;
     private List<StandardPredicate> localCopyClosedPredicates;
     private Map<Integer, List<StandardPredicate>> arityToPredicates;
+    protected Map<StandardPredicate, StandardPredicate> open2BlockPred;
 
-    public LocalRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates) {
-        super(closedPredicates, openPredicates);
+
+    public LocalRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
+        this(closedPredicates, openPredicates, null);
+    }
+
+    public LocalRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates,
+                                    Map<StandardPredicate, StandardPredicate> open2BlockPred) {
+        super(closedPredicates, openPredicates, open2BlockPred);
         this.localCopyPredicates = new ArrayList<>(this.predicates);
         this.localCopyOpenPredicates = new ArrayList<>();
         this.localCopyClosedPredicates = new ArrayList<>();
@@ -27,6 +34,11 @@ public class LocalRandomRuleGenerator extends LocalRuleTemplate implements DRLRu
         }
         for (StandardPredicate p : this.openPredicates) {
             this.localCopyOpenPredicates.add(p);
+        }
+        this.open2BlockPred = open2BlockPred;
+        for (StandardPredicate p : open2BlockPred.values()){
+            this.localCopyClosedPredicates.remove(p);
+            this.localCopyPredicates.remove(p);
         }
         this.arityToPredicates = new HashMap<>();
         for (StandardPredicate p: this.localCopyClosedPredicates){
@@ -67,11 +79,13 @@ public class LocalRandomRuleGenerator extends LocalRuleTemplate implements DRLRu
                 break;
             }
             predicates.add(p);
-            isNegated.add(RandUtils.nextBoolean());
+//            isNegated.add(RandUtils.nextBoolean());
+            isNegated.add(false);
             usedPredicate.add(p);
         }
         predicates.add(headPredicate);
-        isNegated.add(RandUtils.nextBoolean());
+//        isNegated.add(RandUtils.nextBoolean());
+        isNegated.add(false);
         return getRule(predicates, isNegated, true, 0);
     }
 

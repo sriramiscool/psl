@@ -24,6 +24,7 @@ public class SimRuleTemplate implements RuleTemplate {
     protected final Set<StandardPredicate> predicates;
     protected final Set<StandardPredicate> openPredicates;
     protected final Set<StandardPredicate> closedPredicates;
+    protected Map<StandardPredicate, StandardPredicate> open2BlockPred;
     protected final Variable v1;
     protected final Variable v2;
     protected final Variable v3;
@@ -42,7 +43,12 @@ public class SimRuleTemplate implements RuleTemplate {
         return p.getArity() != 2;
     }
 
-    public SimRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates) {
+    public SimRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
+        this(closedPredicates, openPredicates, new HashMap<StandardPredicate, StandardPredicate>());
+    }
+
+    public SimRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates,
+                           Map<StandardPredicate, StandardPredicate> open2BlockPred) {
         Set<StandardPredicate> predicates = new HashSet<>();
         Set<StandardPredicate> openPreds = new HashSet<>();
         Set<StandardPredicate> closedPreds = new HashSet<>();
@@ -62,6 +68,7 @@ public class SimRuleTemplate implements RuleTemplate {
         this.predicates = Collections.unmodifiableSet(predicates);
         this.openPredicates = Collections.unmodifiableSet(openPreds);
         this.closedPredicates = Collections.unmodifiableSet(closedPreds);
+        this.open2BlockPred = open2BlockPred;
 
         v1 = new Variable("A");
         v2 = new Variable("B");
@@ -74,9 +81,15 @@ public class SimRuleTemplate implements RuleTemplate {
 
     @Override
     public boolean isValid(List<StandardPredicate> predicates, List<Boolean> isNegated) {
-        if (predicates.size() != 3 ||
-                !Arrays.equals(predicates.get(2).getDomains(), predicates.get(1).getDomains()) ||
+        if ((predicates.size() != 3) ||
                 !checkRequirement(predicates)){
+            return false;
+        }
+        if (!Arrays.equals(predicates.get(0).getDomains(),predicates.get(2).getDomains())) {
+            return false;
+        }
+        if (!(predicates.get(0).getDomains()[0].equals(predicates.get(1).getDomains()[0]) ||
+                predicates.get(0).getDomains()[1].equals(predicates.get(1).getDomains()[0]))) {
             return false;
         }
         return true;
@@ -89,11 +102,42 @@ public class SimRuleTemplate implements RuleTemplate {
         }
         Formula q1 = new QueryAtom(predicates.get(0), v1, v2);
         //q1 = isNegated.get(0) ? new Negation(q1):q1;
-        Formula q2 = new QueryAtom(predicates.get(1), v1, v3);
-        //q2 = isNegated.get(1) ? new Negation(q2):q2;
-        Formula q3 = new QueryAtom(predicates.get(2), v3, v2);
-        q3 = isNegated.get(2) ? new Negation(q3):q3;
-        Formula and = new Conjunction(q1, q2);
+        Formula q2, q3;
+        int headInd = 2;
+
+        Formula q4 = null, q5 = null;
+        if (open2BlockPred.containsKey(predicates.get(0))){
+            q4 = new QueryAtom(open2BlockPred.get(predicates.get(0)), v1, v2);
+        }
+        if (predicates.get(1).getDomains()[0].equals(predicates.get(0).getDomains()[0])) {
+            q2 = new QueryAtom(predicates.get(1), v1, v3);
+            //q2 = isNegated.get(1) ? new Negation(q2):q2;
+            q3 = new QueryAtom(predicates.get(headInd), v3, v2);
+            q3 = isNegated.get(headInd) ? new Negation(q3):q3;
+            if (open2BlockPred.containsKey(predicates.get(headInd))) {
+                //blocking predicate
+                q5 = new QueryAtom(open2BlockPred.get(predicates.get(headInd)), v3, v2);
+            }
+        } else {
+            q2 = new QueryAtom(predicates.get(1), v2, v3);
+            //q2 = isNegated.get(1) ? new Negation(q2):q2;
+            q3 = new QueryAtom(predicates.get(headInd), v1, v3);
+            q3 = isNegated.get(headInd) ? new Negation(q3) : q3;
+            if (open2BlockPred.containsKey(predicates.get(headInd))) {
+                //blocking predicate
+                q5 = new QueryAtom(open2BlockPred.get(predicates.get(headInd)), v1, v3);
+            }
+        }
+        Formula and;
+        if (q4 == null && q5 == null) {
+            and = new Conjunction(q1, q2);
+        } else if(q4 == null) {
+            and = new Conjunction(q1, q2, q5);
+        } else if(q5 == null){
+            and = new Conjunction(q1, q2, q4);
+        } else {
+            and = new Conjunction(q1, q2, q4, q5);
+        }
         Formula implies = new Implication(and, q3);
         log.trace("Rule generated: " + implies.toString());
         return new WeightedLogicalRule(implies, weight, isSquared);

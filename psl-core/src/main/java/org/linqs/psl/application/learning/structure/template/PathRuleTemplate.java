@@ -13,10 +13,7 @@ import org.linqs.psl.model.term.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by sriramsrinivasan on 12/1/19.
@@ -27,6 +24,7 @@ public class PathRuleTemplate implements RuleTemplate {
     protected final Set<StandardPredicate> predicates;
     protected final Set<StandardPredicate> openPredicates;
     protected final Set<StandardPredicate> closedPredicates;
+    protected Map<StandardPredicate, StandardPredicate> open2BlockPred;
 
 
     private static boolean checkRequirement(List<StandardPredicate> predicates) {
@@ -42,7 +40,12 @@ public class PathRuleTemplate implements RuleTemplate {
         return p.getArity() != 2;
     }
 
-    public PathRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates) {
+    public PathRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
+        this(closedPredicates, openPredicates, new HashMap<StandardPredicate, StandardPredicate>());
+    }
+
+    public PathRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates,
+                            Map<StandardPredicate, StandardPredicate> open2BlockPred) {
         Set<StandardPredicate> predicates = new HashSet<>();
         Set<StandardPredicate> openPreds = new HashSet<>();
         Set<StandardPredicate> closedPreds = new HashSet<>();
@@ -62,6 +65,7 @@ public class PathRuleTemplate implements RuleTemplate {
         this.predicates = Collections.unmodifiableSet(predicates);
         this.openPredicates = Collections.unmodifiableSet(openPreds);
         this.closedPredicates = Collections.unmodifiableSet(closedPreds);
+        this.open2BlockPred = open2BlockPred;
     }
 
     public Set<StandardPredicate> getValidPredicates() {
@@ -73,6 +77,15 @@ public class PathRuleTemplate implements RuleTemplate {
         if (!checkRequirement(predicates) || !openPredicates.contains(predicates.get(predicates.size()-1))){
             return false;
         }
+        if (!predicates.get(0).getDomains()[0].equals(predicates.get(predicates.size()-1).getDomains()[0]) ||
+                !predicates.get(predicates.size()-2).getDomains()[1].equals(predicates.get(predicates.size()-1).getDomains()[1]) ) {
+            return false;
+        }
+        for (int i = 1 ; i < predicates.size()-1 ; i++){
+            if(!predicates.get(i-1).getDomains()[1].equals(predicates.get(i).getDomains()[0])){
+                return false;
+            }
+        }
         return true;
     }
 
@@ -83,16 +96,24 @@ public class PathRuleTemplate implements RuleTemplate {
         Variable v1 = new Variable("A0");
         Variable firstVar = v1;
         Variable v2 = new Variable("A1");
-        Formula[] qatoms = new Formula[predicates.size()-1];
+        List<Formula> qatoms = new ArrayList<>();
         for (int i = 0; i < predicates.size()-1; i++) {
-            qatoms[i] = new QueryAtom(predicates.get(i), v1, v2);
+            qatoms.add(new QueryAtom(predicates.get(i), v1, v2));
             //qatoms[i] = isNegated.get(i) ? new Negation(qatoms[i]) : qatoms[i];
+            if (open2BlockPred.containsKey(predicates.get(i))) {
+                qatoms.add(new QueryAtom(open2BlockPred.get(predicates.get(i)), v1, v2));
+            }
             v1 = v2;
             v2 = new Variable("A" + Integer.toString(i+2));
         }
         Formula head = new QueryAtom(predicates.get(predicates.size()-1), firstVar, v1);
         head = isNegated.get(predicates.size() - 1) ? new Negation(head) : head;
-        Formula and = (qatoms.length > 1) ? new Conjunction(qatoms) : qatoms[0];
+        if (open2BlockPred.containsKey(predicates.get(predicates.size()-1))) {
+            qatoms.add(new QueryAtom(open2BlockPred.get(predicates.get(predicates.size()-1)), firstVar, v1));
+        }
+        Formula[] temp = new Formula[qatoms.size()];
+        Formula[] qar = qatoms.toArray(temp);
+        Formula and = (qatoms.size() > 1) ? new Conjunction(qar) : qatoms.get(0);
         Formula implies = new Implication(and, head);
         log.trace("Rule generated: " + implies.toString());
         return new WeightedLogicalRule(implies, weight, isSquared);

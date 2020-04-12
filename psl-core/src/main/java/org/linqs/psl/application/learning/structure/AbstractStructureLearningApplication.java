@@ -4,6 +4,7 @@ import org.linqs.psl.application.ModelApplication;
 import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.application.learning.weight.WeightLearningApplication;
 import org.linqs.psl.application.learning.weight.maxlikelihood.MaxLikelihoodMPE;
+import org.linqs.psl.application.learning.weight.maxlikelihood.MaxPiecewisePseudoLikelihood;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.database.atom.PersistedAtomManager;
@@ -84,7 +85,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
      * The class to use for weight learning.
      */
     public static final String WLEARNER_KEY = CONFIG_PREFIX + ".wlearning";
-    public static final String WLEARNER_DEFAULT = MaxLikelihoodMPE.class.getName();
+    public static final String WLEARNER_DEFAULT = MaxPiecewisePseudoLikelihood.class.getName();
     protected final List<StandardPredicate> predicates;
     protected final Set<StandardPredicate> openPredicates;
     protected final Set<StandardPredicate> closedPredicates;
@@ -109,7 +110,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
 
     protected Reasoner reasoner;
     //TODO: this is very specific right now. Needs to become more general so we can use any weight learning.
-    private MaxLikelihoodMPE weightLearner;
+    private WeightLearningApplication weightLearner;
     protected GroundRuleStore groundRuleStore;
     protected TermGenerator termGenerator;
     protected TermStore termStore;
@@ -269,6 +270,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
         this.groundRuleStore.close();
         this.groundModelInit = false;
         this.initGroundModel();
+        this.inMPEState = false;
     }
 
     protected boolean addRuleToModel(Rule r){
@@ -287,6 +289,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
             grules.add(gr);
         }
         int i = termGenerator.generateTerms(r, grules, termStore);
+        this.inMPEState = false;
 
         return true;
     }
@@ -326,7 +329,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
 //        if (this.weightLearner != null) {
 //            this.weightLearner.close();
 //        }
-        this.weightLearner = new MaxLikelihoodMPE(allRules, mutableRules, rvDB, observedDB,
+        this.weightLearner = new MaxPiecewisePseudoLikelihood(allRules, mutableRules, rvDB, observedDB,
                 reasoner, groundRuleStore, termStore, termGenerator, atomManager, trainingMap);
         return this.weightLearner;
     }
@@ -345,6 +348,16 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
         termStore.clear();
         termStore.ensureVariableCapacity(atomManager.getCachedRVACount());
         termGenerator.generateTerms(groundRuleStore, termStore);
+
+        reasoner.optimize(termStore);
+
+        inMPEState = true;
+    }
+    @SuppressWarnings("unchecked")
+    protected void computeMPEStateNoGround() {
+        if (inMPEState) {
+            return;
+        }
 
         reasoner.optimize(termStore);
 

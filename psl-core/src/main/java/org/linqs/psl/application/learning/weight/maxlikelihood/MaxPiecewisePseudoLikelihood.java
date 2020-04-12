@@ -17,8 +17,11 @@
  */
 package org.linqs.psl.application.learning.weight.maxlikelihood;
 
+import org.linqs.psl.application.learning.weight.TrainingMap;
 import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
+import org.linqs.psl.database.atom.PersistedAtomManager;
+import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.Model;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.atom.GroundAtom;
@@ -27,6 +30,9 @@ import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.application.learning.weight.VotedPerceptron;
+import org.linqs.psl.reasoner.Reasoner;
+import org.linqs.psl.reasoner.term.TermGenerator;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.RandUtils;
 
@@ -63,6 +69,29 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
     public MaxPiecewisePseudoLikelihood(Model model, Database rvDB, Database observedDB) {
         this(model.getRules(), rvDB, observedDB);
     }
+    public MaxPiecewisePseudoLikelihood(List<Rule> rules, List<WeightedRule> mutableRules,
+                            Database rvDB, Database observedDB,
+                            Reasoner reasoner, GroundRuleStore groundRuleStore,
+                            TermStore termStore, TermGenerator termGenerator,
+                            PersistedAtomManager atomManager, TrainingMap trainingMap){
+        super(rules, mutableRules, rvDB, observedDB, reasoner, groundRuleStore, termStore,
+                termGenerator, atomManager, trainingMap);
+
+        maxNumSamples = Config.getInt(NUM_SAMPLES_KEY, NUM_SAMPLES_DEFAULT);
+        numSamples = maxNumSamples;
+        if (numSamples <= 0) {
+            throw new IllegalArgumentException("Number of samples must be positive.");
+        }
+
+        rands = new Random[Parallel.getNumThreads()];
+        for (int i = 0; i < Parallel.getNumThreads(); i++) {
+            rands[i] = new Random(RandUtils.nextLong());
+        }
+
+//        ruleRandomVariableMap = null;
+
+        averageSteps = false;
+    }
 
     public MaxPiecewisePseudoLikelihood(List<Rule> rules, Database rvDB, Database observedDB) {
         super(rules, rvDB, observedDB, false);
@@ -78,7 +107,7 @@ public class MaxPiecewisePseudoLikelihood extends VotedPerceptron {
             rands[i] = new Random(RandUtils.nextLong());
         }
 
-        ruleRandomVariableMap = null;
+//        ruleRandomVariableMap = null;
 
         averageSteps = false;
     }

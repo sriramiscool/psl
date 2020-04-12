@@ -13,10 +13,7 @@ import org.linqs.psl.model.term.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by sriramsrinivasan on 12/1/19.
@@ -27,9 +24,16 @@ public class LocalRuleTemplate implements RuleTemplate {
     protected final Set<StandardPredicate> predicates;
     protected final Set<StandardPredicate> openPredicates;
     protected final Set<StandardPredicate> closedPredicates;
+    protected Map<StandardPredicate, StandardPredicate> open2BlockPred;
 
-    public LocalRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates) {
+    public LocalRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
+        this(closedPredicates, openPredicates, new HashMap<StandardPredicate, StandardPredicate>());
+    }
+
+    public LocalRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates,
+                             Map<StandardPredicate, StandardPredicate> open2BlockPred) {
         Set<StandardPredicate> predicates = new HashSet<>();
+        this.open2BlockPred = open2BlockPred;
         for (StandardPredicate p: closedPredicates){
             predicates.add(p);
         }
@@ -71,20 +75,29 @@ public class LocalRuleTemplate implements RuleTemplate {
         for(int i = 0 ; i < predicates.size()-1; i++){
             set.add(predicates.get(i));
         }
-        Formula[] qatoms = new Formula[set.size()];
+        List<Formula> qatoms = new ArrayList<>();
         Variable[] vars = new Variable[predicates.get(0).getArity()];
         for (int i = 0; i < vars.length; i++) {
             vars[i] = new Variable("A" + Integer.toString(i));
         }
         int i = 0;
         for (StandardPredicate s:set) {
-            qatoms[i] = new QueryAtom(s, vars);
-            qatoms[i] = isNegated.get(i) ? new Negation(qatoms[i]):qatoms[i];
+            Formula q = (new QueryAtom(s, vars));
+            q = isNegated.get(i) ? new Negation(q):q;
+            qatoms.add(q);
+            if(open2BlockPred.containsKey(s)){
+                qatoms.add(new QueryAtom(open2BlockPred.get(s), vars));
+            }
             i++;
         }
         Formula head = new QueryAtom(predicates.get(predicates.size()-1), vars);
         head = isNegated.get(predicates.size()-1) ? new Negation(head):head;
-        Formula and = (qatoms.length > 1) ? new Conjunction(qatoms) : qatoms[0];
+        if(open2BlockPred.containsKey(predicates.get(predicates.size()-1))){
+            qatoms.add(new QueryAtom(open2BlockPred.get(predicates.get(predicates.size()-1)), vars));
+        }
+        Formula[] temp = new Formula[qatoms.size()];
+        Formula[] qar = qatoms.toArray(temp);
+        Formula and = (qatoms.size() > 1) ? new Conjunction(qar) : qatoms.get(0);
         Formula implies = new Implication(and, head);
         log.trace("Rule generated: " + implies.toString());
         return new WeightedLogicalRule(implies, weight, isSquared);

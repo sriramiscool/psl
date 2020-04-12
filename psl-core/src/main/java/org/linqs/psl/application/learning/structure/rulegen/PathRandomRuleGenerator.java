@@ -9,17 +9,24 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-public class PathRandomRuleGenerator extends PathRuleTemplate implements DRLRuleGenerator{
+public class PathRandomRuleGenerator extends PathRuleTemplate implements DRLRuleGenerator,RandomRuleGenerator{
     private static final Logger log = LoggerFactory.getLogger(PathRandomRuleGenerator.class);
 
     private List<StandardPredicate> localCopyPredicates;
     private List<StandardPredicate> localCopyOpenPredicates;
     private List<StandardPredicate> localCopyClosedPredicates;
+    protected Map<StandardPredicate, StandardPredicate> open2BlockPred;
 
-    public PathRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates) {
-        super(closedPredicates, openPredicates);
+    public PathRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
+        this(closedPredicates, openPredicates, null);
+    }
+
+    public PathRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates,
+                                   Map<StandardPredicate, StandardPredicate> open2BlockPred) {
+        super(closedPredicates, openPredicates, open2BlockPred);
         this.localCopyPredicates = new ArrayList<>(this.predicates);
         this.localCopyOpenPredicates = new ArrayList<>();
         this.localCopyClosedPredicates = new ArrayList<>();
@@ -28,6 +35,11 @@ public class PathRandomRuleGenerator extends PathRuleTemplate implements DRLRule
         }
         for (StandardPredicate p : this.openPredicates) {
             this.localCopyOpenPredicates.add(p);
+        }
+        this.open2BlockPred = open2BlockPred;
+        for (StandardPredicate p : open2BlockPred.values()){
+            this.localCopyClosedPredicates.remove(p);
+            this.localCopyPredicates.remove(p);
         }
     }
 
@@ -53,6 +65,23 @@ public class PathRandomRuleGenerator extends PathRuleTemplate implements DRLRule
         String prevDomain = nextPredicate.getDomains()[1];
 
         for (int i = 1; i < ruleLen - 1; i++) {
+            if (i == ruleLen-2) {
+                List<StandardPredicate> finalValidPredicates = new ArrayList<>();
+                for (StandardPredicate p: this.localCopyPredicates) {
+                    if (p.getDomains()[0].equals(prevDomain) && p.getDomains()[1].equals(headPredicate.getDomains()[1])) {
+                        finalValidPredicates.add(p);
+                    }
+                }
+                if (finalValidPredicates.size() == 0) {
+                    throw new RuntimeException("Could not generate the path rule.");
+                }
+                nextPredicate = finalValidPredicates.get(RandUtils.nextInt(finalValidPredicates.size()));
+                predicates.add(nextPredicate);
+//            isNegated.add(RandUtils.nextBoolean());
+                isNegated.add(false);
+
+                break;
+            }
             validPredicates = new ArrayList<>();
             for (StandardPredicate p: this.localCopyPredicates) {
                 if (p.getDomains()[0].equals(prevDomain)) {
@@ -65,11 +94,13 @@ public class PathRandomRuleGenerator extends PathRuleTemplate implements DRLRule
             }
             nextPredicate = validPredicates.get(RandUtils.nextInt(validPredicates.size()));
             predicates.add(nextPredicate);
-            isNegated.add(RandUtils.nextBoolean());
+//            isNegated.add(RandUtils.nextBoolean());
+            isNegated.add(false);
             prevDomain = nextPredicate.getDomains()[1];
         }
         predicates.add(headPredicate);
-        isNegated.add(RandUtils.nextBoolean());
+//        isNegated.add(RandUtils.nextBoolean());
+        isNegated.add(false);
         return getRule(predicates, isNegated, true, 0);
     }
 

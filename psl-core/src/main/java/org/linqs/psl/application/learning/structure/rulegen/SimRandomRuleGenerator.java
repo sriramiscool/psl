@@ -7,20 +7,23 @@ import org.linqs.psl.util.RandUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-public class SimRandomRuleGenerator extends SimRuleTemplate implements DRLRuleGenerator{
+public class SimRandomRuleGenerator extends SimRuleTemplate implements DRLRuleGenerator,RandomRuleGenerator{
     private static final Logger log = LoggerFactory.getLogger(SimRandomRuleGenerator.class);
 
     private List<StandardPredicate> localCopyPredicates;
     private List<StandardPredicate> localCopyOpenPredicates;
     private List<StandardPredicate> localCopyClosedPredicates;
+    protected Map<StandardPredicate, StandardPredicate> open2BlockPred;
 
-    public SimRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates) {
-        super(closedPredicates, openPredicates);
+    public SimRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
+        this(closedPredicates, openPredicates, null);
+    }
+
+    public SimRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates,
+                                  Map<StandardPredicate, StandardPredicate> open2BlockPred) {
+        super(closedPredicates, openPredicates, open2BlockPred);
         this.localCopyPredicates = new ArrayList<>(this.predicates);
         this.localCopyOpenPredicates = new ArrayList<>();
         this.localCopyClosedPredicates = new ArrayList<>();
@@ -29,6 +32,11 @@ public class SimRandomRuleGenerator extends SimRuleTemplate implements DRLRuleGe
         }
         for (StandardPredicate p : this.openPredicates) {
             this.localCopyOpenPredicates.add(p);
+        }
+        this.open2BlockPred = open2BlockPred;
+        for (StandardPredicate p : open2BlockPred.values()){
+            this.localCopyClosedPredicates.remove(p);
+            this.localCopyPredicates.remove(p);
         }
     }
 
@@ -51,12 +59,14 @@ public class SimRandomRuleGenerator extends SimRuleTemplate implements DRLRuleGe
         List<StandardPredicate> predicates = new ArrayList<>();
         List<Boolean> isNegated = new ArrayList<>();
         StandardPredicate headPredicate = this.localCopyOpenPredicates.get(RandUtils.nextInt(this.localCopyOpenPredicates.size()));
-        String simDomain = headPredicate.getDomains()[0];
+        String simDomain1 = headPredicate.getDomains()[0];
+        String simDomain2 = headPredicate.getDomains()[1];
         predicates.add(headPredicate);
         isNegated.add(RandUtils.nextBoolean());
         List<StandardPredicate> possiblePredicates = new ArrayList<>();
         for (StandardPredicate p : this.localCopyClosedPredicates) {
-            if(p.getDomains()[0].equals(simDomain) && p.getDomains()[1].equals(simDomain)) {
+            if(p.getDomains()[0].equals(p.getDomains()[1]) &&
+                    (p.getDomains()[0].equals(simDomain1) || p.getDomains()[0].equals(simDomain2) )) {
                 possiblePredicates.add(p);
             }
         }
@@ -67,7 +77,8 @@ public class SimRandomRuleGenerator extends SimRuleTemplate implements DRLRuleGe
         predicates.add(possiblePredicates.get(RandUtils.nextInt(possiblePredicates.size())));
         isNegated.add(RandUtils.nextBoolean());
         predicates.add(headPredicate);
-        isNegated.add(RandUtils.nextBoolean());
+//        isNegated.add(RandUtils.nextBoolean());
+        isNegated.add(false);
         return getRule(predicates, isNegated, true, 0);
     }
 
