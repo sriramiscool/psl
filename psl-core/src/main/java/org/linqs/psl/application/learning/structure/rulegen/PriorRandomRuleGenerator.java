@@ -23,7 +23,7 @@ public class PriorRandomRuleGenerator extends PriorRuleTemplate implements Rando
 
 
     public PriorRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
-        this(closedPredicates, openPredicates, null);
+        this(closedPredicates, openPredicates, new HashMap<StandardPredicate, StandardPredicate>());
     }
 
     public PriorRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates,

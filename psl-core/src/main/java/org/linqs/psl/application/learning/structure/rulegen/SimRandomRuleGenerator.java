@@ -18,7 +18,7 @@ public class SimRandomRuleGenerator extends SimRuleTemplate implements DRLRuleGe
     protected Map<StandardPredicate, StandardPredicate> open2BlockPred;
 
     public SimRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
-        this(closedPredicates, openPredicates, null);
+        this(closedPredicates, openPredicates, new HashMap<StandardPredicate, StandardPredicate>());
     }
 
     public SimRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates,

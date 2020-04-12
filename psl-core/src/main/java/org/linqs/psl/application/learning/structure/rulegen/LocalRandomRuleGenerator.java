@@ -20,7 +20,7 @@ public class LocalRandomRuleGenerator extends LocalRuleTemplate implements DRLRu
 
 
     public LocalRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
-        this(closedPredicates, openPredicates, null);
+        this(closedPredicates, openPredicates, new HashMap<StandardPredicate, StandardPredicate>());
     }
 
     public LocalRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates,

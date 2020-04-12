@@ -17,11 +17,10 @@
  */
 package org.linqs.psl.model.rule.arithmetic.expression.coefficient;
 
-import java.util.Map;
-import java.util.Set;
-
 import org.linqs.psl.model.rule.arithmetic.expression.SummationVariable;
-import org.linqs.psl.model.term.Constant;
+import org.linqs.psl.util.MathUtils;
+
+import java.util.Map;
 
 public class ConstantNumber extends Coefficient {
     protected final float value;
@@ -43,5 +42,23 @@ public class ConstantNumber extends Coefficient {
     @Override
     public Coefficient simplify() {
         return this;
+    }
+
+    @Override
+    public int hashCode(){return Float.toString(value).hashCode();}
+
+    @Override
+    public boolean equals(Object o){
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof ConstantNumber)) {
+            return false;
+        }
+        ConstantNumber other = (ConstantNumber) o;
+        if (MathUtils.equals(this.value, ((ConstantNumber) o).value)) {
+            return true;
+        }
+        return false;
     }
 }

@@ -7,10 +7,7 @@ import org.linqs.psl.util.RandUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class PathRandomRuleGenerator extends PathRuleTemplate implements DRLRuleGenerator,RandomRuleGenerator{
     private static final Logger log = LoggerFactory.getLogger(PathRandomRuleGenerator.class);
@@ -21,7 +18,7 @@ public class PathRandomRuleGenerator extends PathRuleTemplate implements DRLRule
     protected Map<StandardPredicate, StandardPredicate> open2BlockPred;
 
     public PathRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
-        this(closedPredicates, openPredicates, null);
+        this(closedPredicates, openPredicates, new HashMap<StandardPredicate, StandardPredicate>());
     }
 
     public PathRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates,
