@@ -244,7 +244,7 @@ public class ArithmeticRuleExpression {
             return false;
         }
 
-        if (this.comparator != otherExpression.comparator || !this.constant.equals(otherExpression.constant)) {
+        if (this.comparator != otherExpression.comparator || this.constant != otherExpression.constant) {
             return false;
         }
 
