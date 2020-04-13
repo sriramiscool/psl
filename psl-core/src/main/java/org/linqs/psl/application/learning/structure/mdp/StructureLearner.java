@@ -102,7 +102,7 @@ public class StructureLearner implements MDP<State, Integer, DiscreteSpace> {
             else {
                 List<StandardPredicate> rulePredicates = this.state.getRulePredicates();
                 StandardPredicate targetPredicate = this.state.getCurrentTargetPredicate();
-                if(template.isValid(targetPredicate, rulePredicates, selectedPredicate)) {
+                if(template.isValid(targetPredicate, rulePredicates, selectedPredicate, ruleLength)) {
                     isValid =  true;
                 }
             }

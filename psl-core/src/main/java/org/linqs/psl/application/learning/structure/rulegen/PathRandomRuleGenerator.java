@@ -115,7 +115,7 @@ public class PathRandomRuleGenerator extends PathRuleTemplate implements DRLRule
     }
 
     @Override
-    public boolean isValid(StandardPredicate targetPredicate, List<StandardPredicate> rulePredicates, StandardPredicate action) {
+    public boolean isValid(StandardPredicate targetPredicate, List<StandardPredicate> rulePredicates, StandardPredicate action, int maxRuleLength) {
         int currentRuleLength = rulePredicates.size();
         boolean isValidFlag = false;
         //If it is the first predicate after target predicate
@@ -124,10 +124,16 @@ public class PathRandomRuleGenerator extends PathRuleTemplate implements DRLRule
                 if (targetPredicate.getDomains()[0].equals(action.getDomains()[0])) {
                     isValidFlag = true;
                 }
-            } else {
+            } else  {
                 if (rulePredicates.get(currentRuleLength - 1).getDomains()[1].equals(action.getDomains()[0])) {
-                    isValidFlag = true;
-                    //TODO: Also need to check the last predicate matches with the target endpredicate
+                    if (rulePredicates.size() == maxRuleLength - 2) {
+                        if (action.getDomains()[1].equals(targetPredicate.getDomains()[1])) {
+                            isValidFlag = true;
+                        }
+                    }
+                    else {
+                        isValidFlag = true;
+                    }
                 }
             }
         }

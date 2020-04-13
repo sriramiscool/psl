@@ -104,7 +104,7 @@ public class LocalRandomRuleGenerator extends LocalRuleTemplate implements DRLRu
     }
 
     @Override
-    public boolean isValid(StandardPredicate targetPredicate, List<StandardPredicate> rulePredicates, StandardPredicate action) {
+    public boolean isValid(StandardPredicate targetPredicate, List<StandardPredicate> rulePredicates, StandardPredicate action, int maxRuleLength) {
 
 
         String[] chosenDomains = targetPredicate.getDomains();
