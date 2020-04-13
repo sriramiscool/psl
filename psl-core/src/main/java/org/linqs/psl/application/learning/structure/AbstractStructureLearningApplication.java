@@ -31,6 +31,9 @@ import org.linqs.psl.util.Reflection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -84,8 +87,10 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
     /**
      * The class to use for weight learning.
      */
-    public static final String WLEARNER_KEY = CONFIG_PREFIX + ".wlearning";
-    public static final String WLEARNER_DEFAULT = MaxPiecewisePseudoLikelihood.class.getName();
+//    public static final String WLEARNER_KEY = CONFIG_PREFIX + ".wlearning";
+//    public static final String WLEARNER_DEFAULT = MaxPiecewisePseudoLikelihood.class.getName();
+    private static final String CHECKPOINT_KEY = CONFIG_PREFIX + "checkpoint";
+    private static final String CHECKPOINT_DEFAULT = "checkpoint_model_learned.psl";
     protected final List<StandardPredicate> predicates;
     protected final Set<StandardPredicate> openPredicates;
     protected final Set<StandardPredicate> closedPredicates;
@@ -125,6 +130,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
      * but besides that it is up to children to set to false when weights are changed.
      */
     protected boolean inMPEState;
+    private final String learnedFilename;
 
     public AbstractStructureLearningApplication(List<Rule> rules, Database rvDB, Database observedDB,
                                                 Set<StandardPredicate> closedPredicates,
@@ -172,6 +178,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
         Config.addProperty(PersistedAtomManager.THROW_ACCESS_EXCEPTION_KEY, false);
         Config.addProperty(MaxLikelihoodMPE.NUM_STEPS_KEY, 10);
         Config.addProperty(ADMMReasoner.MAX_ITER_KEY, 100);
+        learnedFilename = Config.getString(CHECKPOINT_KEY, CHECKPOINT_DEFAULT);
     }
 
     /**
@@ -292,6 +299,26 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
         this.inMPEState = false;
 
         return true;
+    }
+
+    protected void checkpointModel(){
+        log.info("Writing learned model to {}", learnedFilename);
+
+        Model model = new Model();
+        for (Rule r:this.bestRulesSoFar){
+            model.addRule(r);
+        }
+        String outModel = model.asString();
+
+        // Remove excess parens.
+        outModel = outModel.replaceAll("\\( | \\)", "");
+
+        try (FileWriter learnedFileWriter = new FileWriter(new File(learnedFilename))) {
+            learnedFileWriter.write(outModel);
+        } catch (IOException ex) {
+            log.error("Failed to write learned model:\n" + outModel);
+            throw new RuntimeException("Failed to write learned model to: " + learnedFilename, ex);
+        }
     }
 
 

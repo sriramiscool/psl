@@ -102,7 +102,7 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
                 this.bestRulesSoFar.clear();
                 this.bestRulesSoFar.addAll(this.allRules);
                 log.debug("Got a better model with metric: " + metric);
-
+                checkpointModel();
             }
         }
 
