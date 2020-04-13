@@ -1,7 +1,6 @@
 package org.linqs.psl.application.learning.structure;
 
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
-import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.QLearningDiscreteDense;
 import org.deeplearning4j.rl4j.network.dqn.DQNFactoryStdDense;
 import org.deeplearning4j.rl4j.util.DataManager;
 import org.linqs.psl.application.learning.structure.mdp.State;
@@ -42,6 +41,7 @@ public class DRLStructureLearner extends AbstractStructureLearningApplication{
     private static final String NUM_RULES_KEY = CONFIG_PREFIX + ".numrules";
     private static final int NUM_RULES_DEFAULT = 5;
     private static final int NUM_TRIES_PER_RULE_DEFAULT = 5;
+    private static final String BLOCK_PRED_MAP_KEY = CONFIG_PREFIX + ".block";
 
     private int numIte;
     protected Map<StandardPredicate, Integer> predicateToId;
@@ -55,7 +55,7 @@ public class DRLStructureLearner extends AbstractStructureLearningApplication{
     private int numPredicates;
 
     private StructureLearner mdp;
-    private QLearningDiscreteDense<State> dql;
+    private CustomQLearningDiscreteDense<State> dql;
     private CustomDLPolicy<State> pol;
 
     public DRLStructureLearner(List<Rule> rules, Database rvDB, Database observedDB,
@@ -71,10 +71,41 @@ public class DRLStructureLearner extends AbstractStructureLearningApplication{
             this.predicateToId.put(this.predicates.get(i), i);
         }
         this.idToTemplate = new HashMap<>();
-        
-        this.idToTemplate.put(0, new PathRandomRuleGenerator(closedPredicates, openPredicates));
-        this.idToTemplate.put(1, new SimRandomRuleGenerator(closedPredicates, openPredicates));
-        this.idToTemplate.put(2, new LocalRandomRuleGenerator(closedPredicates, openPredicates));
+
+        String blockStr = Config.getString(BLOCK_PRED_MAP_KEY, null);
+        Map<String, StandardPredicate> openPredicateStrMap = new HashMap<>();
+        Map<String, StandardPredicate> closedPredicateStrMap = new HashMap<>();
+        Map<StandardPredicate, StandardPredicate> open2BlockPred = new HashMap<>();
+
+        for (StandardPredicate p: openPredicates){
+            openPredicateStrMap.put(p.getName().toUpperCase(), p);
+        }
+        for (StandardPredicate p: closedPredicates){
+            closedPredicateStrMap.put(p.getName().toUpperCase(), p);
+        }
+
+        if(blockStr != null){
+            String[] split = blockStr.split(",");
+            if (split.length < 1) {
+                throw new RuntimeException("Block predicate specified incorrect format: expected bp1:op2,bp3:op4, " +
+                        "found: " + blockStr);
+            }
+            for (int i = 0 ; i < split.length ; i++){
+                String s = split[i];
+                String[] b2o = s.split(":");
+                if (b2o.length != 2){
+                    throw new RuntimeException("Block predicate specified incorrect format: expected p1:p2,p3:p4, " +
+                            "found: " + blockStr);
+                }
+                String blk = b2o[0].toUpperCase();
+                String opn = b2o[1].toUpperCase();
+                open2BlockPred.put(openPredicateStrMap.get(opn), closedPredicateStrMap.get(blk));
+            }
+        }
+
+        this.idToTemplate.put(0, new PathRandomRuleGenerator(closedPredicates, openPredicates, open2BlockPred));
+        this.idToTemplate.put(1, new SimRandomRuleGenerator(closedPredicates, openPredicates, open2BlockPred));
+        this.idToTemplate.put(2, new LocalRandomRuleGenerator(closedPredicates, openPredicates, open2BlockPred));
 
         this.numTemplates = idToTemplate.size();
         this.numPredicates = this.predicates.size();
@@ -97,9 +128,9 @@ public class DRLStructureLearner extends AbstractStructureLearningApplication{
         QLearning.QLConfiguration.QLConfigurationBuilder psl_ql = QLearning.QLConfiguration.builder();
         QLearning.QLConfiguration qlConfiguration = psl_ql.batchSize(12).maxEpochStep(20).maxStep(50000).
                 expRepMaxSize(1).batchSize(32).targetDqnUpdateFreq(32).updateStart(0).rewardFactor(1).
-                gamma(0.98).errorClamp(10000).minEpsilon(0.1f).epsilonNbStep(3000).doubleDQN(true).build();
+                gamma(0.98).errorClamp(10000).minEpsilon(0.01f).epsilonNbStep(3000).doubleDQN(true).build();
 
-        this.dql = new QLearningDiscreteDense<State>(this.mdp, PSL_NET, qlConfiguration, manager);
+        this.dql = new CustomQLearningDiscreteDense<State>(this.mdp, PSL_NET, qlConfiguration, manager);
         //Learning<State, Integer, DiscreteSpace, IDQN> dql = new QLearningDiscreteDense<State>(mdp, PSL_NET, qlConfiguration, manager);
 
         //enable some logging for debug purposes on toy mdp
@@ -112,7 +143,7 @@ public class DRLStructureLearner extends AbstractStructureLearningApplication{
 
     public static DQNFactoryStdDense.Configuration PSL_NET =
             DQNFactoryStdDense.Configuration.builder()
-                    .l2(0.01).updater(new Adam(1e-2)).numLayer(2).numHiddenNodes(32).build();
+                    .l2(0.01).updater(new Adam(1e-2)).numLayer(3).numHiddenNodes(256).build();
 
     @Override
     protected void doLearn() {
