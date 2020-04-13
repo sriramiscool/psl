@@ -83,18 +83,18 @@ public class SimRandomRuleGenerator extends SimRuleTemplate implements DRLRuleGe
     }
 
     @Override
-    public boolean isValid(StandardPredicate targetPredicate, List<StandardPredicate> rulePredicates, StandardPredicate action) {
+    public boolean isValid(StandardPredicate targetPredicate, List<StandardPredicate> rulePredicates, StandardPredicate action, int maxRuleLength) {
         int currentRuleLength = rulePredicates.size();
         boolean isValidFlag = false;
 
         if (action.getDomains().length == 2) {
             //If it is the first predicate after target predicate
             if (currentRuleLength == 1) {
-                if ((targetPredicate.getDomains()[0].equals(action.getDomains()[0]) && targetPredicate.getDomains()[0].equals(action.getDomains()[1])) || (targetPredicate.getDomains()[1].equals(action.getDomains()[0]) && targetPredicate.getDomains()[1].equals(action.getDomains()[1]))) {
+                if (Arrays.equals(action.getDomains(), targetPredicate.getDomains())) {
                     isValidFlag = true;
                 }
             } else {
-                if (Arrays.equals(action.getDomains(), targetPredicate.getDomains())) {
+                if ((targetPredicate.getDomains()[0].equals(action.getDomains()[0]) && targetPredicate.getDomains()[0].equals(action.getDomains()[1])) || (targetPredicate.getDomains()[1].equals(action.getDomains()[0]) && targetPredicate.getDomains()[1].equals(action.getDomains()[1]))) {
                     isValidFlag = true;
                 }
             }

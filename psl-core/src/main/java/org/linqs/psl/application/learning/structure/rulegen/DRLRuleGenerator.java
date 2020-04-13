@@ -9,5 +9,5 @@ public interface DRLRuleGenerator {
         Rule generateRule(StandardPredicate headPredicate, List<StandardPredicate> bodyPredicates,
                           List<Boolean> isNegated);
         boolean isValid(StandardPredicate targetPredicate, List<StandardPredicate> rulePredicates,
-                        StandardPredicate action);
+                        StandardPredicate action, int maxRuleLength);
 }

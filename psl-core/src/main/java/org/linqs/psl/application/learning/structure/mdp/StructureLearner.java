@@ -12,6 +12,7 @@ import org.deeplearning4j.rl4j.space.ObservationSpace;
 import org.json.JSONObject;
 import org.linqs.psl.application.learning.structure.rulegen.DRLRuleGenerator;
 import org.linqs.psl.model.predicate.StandardPredicate;
+import org.linqs.psl.model.rule.WeightedRule;
 
 import java.util.*;
 
@@ -66,7 +67,21 @@ public class StructureLearner implements MDP<State, Integer, DiscreteSpace> {
     }
 
     private double computeReward() {
-        return 10000;
+        if (!this.state.getInRule()) {
+            Set<WeightedRule> uniqueRules = new LinkedHashSet<>();
+            uniqueRules.addAll(this.state.getRules());
+            int numNewRules = uniqueRules.size();
+            int numOldRules = this.state.getRules().size();
+            if (numNewRules == numOldRules) {
+                return numNewRules * 1000;
+            }
+            else {
+                return 0;
+            }
+        }
+        else {
+            return 100;
+        }
     }
 
     private boolean checkValidAction(Integer a) {
@@ -87,7 +102,7 @@ public class StructureLearner implements MDP<State, Integer, DiscreteSpace> {
             else {
                 List<StandardPredicate> rulePredicates = this.state.getRulePredicates();
                 StandardPredicate targetPredicate = this.state.getCurrentTargetPredicate();
-                if(template.isValid(targetPredicate, rulePredicates, selectedPredicate)) {
+                if(template.isValid(targetPredicate, rulePredicates, selectedPredicate, ruleLength)) {
                     isValid =  true;
                 }
             }
@@ -111,7 +126,7 @@ public class StructureLearner implements MDP<State, Integer, DiscreteSpace> {
 
         if(checkValidAction(a)) {
             this.state.updateState(a);
-            computeReward();
+            reward = computeReward();
         }
         else {
             //Move it to the right place
