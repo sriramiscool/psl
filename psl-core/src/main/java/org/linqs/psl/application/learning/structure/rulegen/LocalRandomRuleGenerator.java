@@ -56,7 +56,7 @@ public class LocalRandomRuleGenerator extends LocalRuleTemplate implements DRLRu
         if (maxRuleLen < 2) {
             throw new RuntimeException("Rule lenght must be greater than 2.");
         }
-        int newRuleLen = RandUtils.nextInt(maxRuleLen-1) + 2;
+        int newRuleLen = RandUtils.nextInt(maxRuleLen-2) + 2;
         List<StandardPredicate> predicates = new ArrayList<>();
         List<Boolean> isNegated = new ArrayList<>();
         StandardPredicate headPredicate = this.localCopyOpenPredicates.get(RandUtils.nextInt(this.localCopyOpenPredicates.size()));

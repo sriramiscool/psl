@@ -6,6 +6,8 @@ import org.linqs.psl.config.Config;
 import org.linqs.psl.database.Database;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.util.RandUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,9 +132,12 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
 
         WeightLearningApplication newWeightLearner = this.getNewWeightLearner();
         newWeightLearner.learn();
-//        for(WeightedRule r: this.mutableRules) {
+        for(WeightedRule r: this.mutableRules) {
+            if(r instanceof WeightedArithmeticRule && r.toString().contains("= 0.0")){
+                r.setWeight(0.001);
+            }
 //            r.setWeight(1);
-//        }
+        }
         this.computeMPEState();
         this.evaluator.compute(trainingMap);
     }

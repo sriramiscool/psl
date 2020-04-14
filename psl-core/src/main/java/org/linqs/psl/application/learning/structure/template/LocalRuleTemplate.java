@@ -5,7 +5,6 @@ import org.linqs.psl.model.formula.Conjunction;
 import org.linqs.psl.model.formula.Formula;
 import org.linqs.psl.model.formula.Implication;
 import org.linqs.psl.model.formula.Negation;
-import org.linqs.psl.model.predicate.Predicate;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
@@ -52,15 +51,23 @@ public class LocalRuleTemplate implements RuleTemplate {
 
     @Override
     public boolean isValid(List<StandardPredicate> predicates, List<Boolean> isNegated) {
-        int arity = predicates.get(0).getArity();
-        int count = 0;
-        for (Predicate p : predicates) {
-            if (p.getArity() != arity){// || (count < predicates.size()-1 && !closedPredicates.contains(p))){
-                return false;
-            }
-            count++;
+        if (predicates.size() < 2) {
+            return false;
         }
         if (!openPredicates.contains(predicates.get(predicates.size()-1))){
+            return false;
+        }
+        String[] headDomian = predicates.get(predicates.size()-1).getDomains();
+        int countClosed = 0;
+        for (StandardPredicate p : predicates) {
+            if (!Arrays.equals(p.getDomains(), headDomian)){
+                return false;
+            }
+            if (this.closedPredicates.contains(p)) {
+                countClosed++;
+            }
+        }
+        if (countClosed == 0) {
             return false;
         }
         return true;
