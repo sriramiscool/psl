@@ -72,7 +72,7 @@ public class PriorRuleTemplate implements RuleTemplate {
             vars[i] = new Variable("A"+Integer.toString(i));
         }
         SummationAtomOrAtom prior = new QueryAtom(predicates.get(0), vars);
-        ConstantNumber constant = isNegated.get(0) ? new ConstantNumber(1.0f) : new ConstantNumber(1.0f);
+        ConstantNumber constant = isNegated.get(0) ? new ConstantNumber(0.0f) : new ConstantNumber(1.0f);
         ArithmeticRuleExpression expression = new ArithmeticRuleExpression(
                 Arrays.asList((Coefficient) new ConstantNumber(1.0f)),
                 Arrays.asList(prior),

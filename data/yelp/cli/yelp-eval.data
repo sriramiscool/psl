@@ -1,24 +1,100 @@
 predicates:
-    user/1: closed
-    item/1: closed
-    users_are_friends/2: closed
-    sim_content_items_jaccard/2: closed
-    sim_pearson_items/2: closed
-    sim_cosine_items/2: closed
-    sim_adjcos_items/2: closed
-    sim_pearson_users/2: closed
-    sim_cosine_users/2: closed
-    sim_mf_cosine_users/2: closed
-    sim_mf_euclidean_users/2: closed
-    sim_mf_cosine_items/2: closed
-    sim_mf_euclidean_items/2: closed
-    avg_user_rating/1: closed
-    avg_item_rating/1: closed
-    rated/2: closed
-    sgd_rating/2: closed
-    bpmf_rating/2: closed
-    item_pearson_rating/2: closed
-    rating/2: open
+    user/1:
+        - closed
+        - domains:
+            - user
+    item/1:
+        - closed
+        - domains:
+            - item
+    users_are_friends/2:
+        - closed
+        - domains:
+            - user
+            - user
+    sim_content_items_jaccard/2:
+        - closed
+        - domains:
+            - item
+            - item
+    sim_pearson_items/2:
+        - closed
+        - domains:
+            - item
+            - item
+    sim_cosine_items/2:
+        - closed
+        - domains:
+            - item
+            - item
+    sim_adjcos_items/2:
+        - closed
+        - domains:
+            - item
+            - item
+    sim_pearson_users/2:
+        - closed
+        - domains:
+            - user
+            - user
+    sim_cosine_users/2:
+        - closed
+        - domains:
+            - user
+            - user
+    sim_mf_cosine_users/2:
+        - closed
+        - domains:
+            - user
+            - user
+    sim_mf_euclidean_users/2:
+        - closed
+        - domains:
+            - user
+            - user
+    sim_mf_cosine_items/2:
+        - closed
+        - domains:
+            - item
+            - item
+    sim_mf_euclidean_items/2:
+        - closed
+        - domains:
+            - item
+            - item
+    avg_user_rating/1:
+        - closed
+        - domains:
+            - user
+    avg_item_rating/1:
+        - closed
+        - domains:
+            - item
+    sgd_rating/2:
+        - closed
+        - domains:
+            - user
+            - item
+    bpmf_rating/2:
+        - closed
+        - domains:
+            - user
+            - item
+    item_pearson_rating/2:
+        - closed
+        - domains:
+            - user
+            - item
+    rated/2:
+        - closed
+        - domains:
+            - user
+            - item
+    rating/2:
+        - open
+        - domains:
+            - user
+            - item
 
 observations:
     user: ../data/yelp/0/eval/user_obs.txt
