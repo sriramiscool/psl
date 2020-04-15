@@ -134,7 +134,7 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
         newWeightLearner.learn();
         for(WeightedRule r: this.mutableRules) {
             if(r instanceof WeightedArithmeticRule && r.toString().contains("= 0.0")){
-                r.setWeight(0.001);
+                r.setWeight(0.01);
             }
 //            r.setWeight(1);
         }
