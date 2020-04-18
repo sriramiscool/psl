@@ -18,19 +18,14 @@ import java.util.*;
 /**
  * Created by sriramsrinivasan on 12/1/19.
  */
-public class SimRuleTemplate implements RuleTemplate {
+public class SimRuleTemplate extends AbstractRuleTemplate {
     private static final Logger log = LoggerFactory.getLogger(SimRuleTemplate.class);
-
-    protected final Set<StandardPredicate> predicates;
-    protected final Set<StandardPredicate> openPredicates;
-    protected final Set<StandardPredicate> closedPredicates;
-    protected Map<StandardPredicate, StandardPredicate> open2BlockPred;
     protected final Variable v1;
     protected final Variable v2;
     protected final Variable v3;
 
 
-    private static boolean checkRequirement(List<StandardPredicate> predicates) {
+    private boolean checkRequirement(List<StandardPredicate> predicates) {
         for (int i = 0; i < predicates.size() ; i++) {
             if (invalidPredicate(predicates.get(i))){
                 return false;
@@ -39,7 +34,7 @@ public class SimRuleTemplate implements RuleTemplate {
         return true;
     }
 
-    private static boolean invalidPredicate(Predicate p) {
+    private boolean invalidPredicate(Predicate p) {
         return p.getArity() != 2;
     }
 
@@ -49,26 +44,20 @@ public class SimRuleTemplate implements RuleTemplate {
 
     public SimRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates,
                            Map<StandardPredicate, StandardPredicate> open2BlockPred) {
-        Set<StandardPredicate> predicates = new HashSet<>();
-        Set<StandardPredicate> openPreds = new HashSet<>();
-        Set<StandardPredicate> closedPreds = new HashSet<>();
+        super(open2BlockPred, closedPredicates, openPredicates);
         for (StandardPredicate p: closedPredicates){
-            if (!invalidPredicate(p)) {
-                predicates.add(p);
-                closedPreds.add(p);
+            if (invalidPredicate(p)) {
+                predicates.remove(p);
+                this.closedPredicates.remove(p);
             }
         }
 
         for (StandardPredicate p: openPredicates){
-            if (!invalidPredicate(p)) {
-                predicates.add(p);
-                openPreds.add(p);
+            if (invalidPredicate(p)) {
+                predicates.remove(p);
+                this.openPredicates.remove(p);
             }
         }
-        this.predicates = Collections.unmodifiableSet(predicates);
-        this.openPredicates = Collections.unmodifiableSet(openPreds);
-        this.closedPredicates = Collections.unmodifiableSet(closedPreds);
-        this.open2BlockPred = open2BlockPred;
 
         v1 = new Variable("A");
         v2 = new Variable("B");

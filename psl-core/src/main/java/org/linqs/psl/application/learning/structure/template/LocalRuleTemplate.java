@@ -18,13 +18,8 @@ import java.util.*;
 /**
  * Created by sriramsrinivasan on 12/1/19.
  */
-public class LocalRuleTemplate implements RuleTemplate {
+public class LocalRuleTemplate extends AbstractRuleTemplate {
     private static final Logger log = LoggerFactory.getLogger(LocalRuleTemplate.class);
-
-    protected final Set<StandardPredicate> predicates;
-    protected final Set<StandardPredicate> openPredicates;
-    protected final Set<StandardPredicate> closedPredicates;
-    protected Map<StandardPredicate, StandardPredicate> open2BlockPred;
 
     public LocalRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
         this(closedPredicates, openPredicates, new HashMap<StandardPredicate, StandardPredicate>());
@@ -32,18 +27,7 @@ public class LocalRuleTemplate implements RuleTemplate {
 
     public LocalRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates,
                              Map<StandardPredicate, StandardPredicate> open2BlockPred) {
-        Set<StandardPredicate> predicates = new HashSet<>();
-        this.open2BlockPred = open2BlockPred;
-        for (StandardPredicate p: closedPredicates){
-            predicates.add(p);
-        }
-
-        for (StandardPredicate p: openPredicates){
-            predicates.add(p);
-        }
-        this.predicates = Collections.unmodifiableSet(predicates);
-        this.openPredicates = Collections.unmodifiableSet(openPredicates);
-        this.closedPredicates = Collections.unmodifiableSet(closedPredicates);
+        super(open2BlockPred, closedPredicates, openPredicates);
     }
 
     public Set<StandardPredicate> getValidPredicates() {
@@ -62,7 +46,7 @@ public class LocalRuleTemplate implements RuleTemplate {
         int countClosed = 0;
         for (StandardPredicate p : predicates) {
             Set<String> curDomains = new HashSet<String>(Arrays.asList(p.getDomains()));
-            if (!(headDomian.containsAll(curDomains) || curDomains.containsAll(headDomian))){
+            if (!((headDomian.containsAll(curDomains) || curDomains.containsAll(headDomian)))){
                 return false;
             }
             if (this.closedPredicates.contains(p)) {

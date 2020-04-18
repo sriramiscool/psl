@@ -19,7 +19,6 @@ public class PriorRandomRuleGenerator extends PriorRuleTemplate implements Rando
     private List<StandardPredicate> localCopyOpenPredicates;
     private List<StandardPredicate> localCopyClosedPredicates;
     private Map<Integer, List<StandardPredicate>> arityToPredicates;
-    protected Map<StandardPredicate, StandardPredicate> open2BlockPred;
 
 
     public PriorRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
@@ -38,7 +37,6 @@ public class PriorRandomRuleGenerator extends PriorRuleTemplate implements Rando
         for (StandardPredicate p : this.openPredicates) {
             this.localCopyOpenPredicates.add(p);
         }
-        this.open2BlockPred = open2BlockPred;
         for (StandardPredicate p : open2BlockPred.values()){
             this.localCopyClosedPredicates.remove(p);
             this.localCopyPredicates.remove(p);

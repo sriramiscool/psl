@@ -18,13 +18,9 @@ import java.util.*;
 /**
  * Created by sriramsrinivasan on 4/11/20.
  */
-public class PriorRuleTemplate implements RuleTemplate {
+public class PriorRuleTemplate extends AbstractRuleTemplate {
     private static final Logger log = LoggerFactory.getLogger(PriorRuleTemplate.class);
 
-    protected final Set<StandardPredicate> predicates;
-    protected final Set<StandardPredicate> openPredicates;
-    protected final Set<StandardPredicate> closedPredicates;
-    protected Map<StandardPredicate, StandardPredicate> open2BlockPred;
 
     public PriorRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
         this(closedPredicates, openPredicates, new HashMap<StandardPredicate, StandardPredicate>());
@@ -32,18 +28,8 @@ public class PriorRuleTemplate implements RuleTemplate {
 
     public PriorRuleTemplate(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates,
                              Map<StandardPredicate, StandardPredicate> open2BlockPred) {
-        Set<StandardPredicate> predicates = new HashSet<>();
-        this.open2BlockPred = open2BlockPred;
-        for (StandardPredicate p: closedPredicates){
-            predicates.add(p);
-        }
+        super(open2BlockPred, closedPredicates, openPredicates);
 
-        for (StandardPredicate p: openPredicates){
-            predicates.add(p);
-        }
-        this.predicates = Collections.unmodifiableSet(predicates);
-        this.openPredicates = Collections.unmodifiableSet(openPredicates);
-        this.closedPredicates = Collections.unmodifiableSet(closedPredicates);
     }
 
     @Override

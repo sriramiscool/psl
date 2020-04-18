@@ -16,7 +16,6 @@ public class LocalRandomRuleGenerator extends LocalRuleTemplate implements DRLRu
     private List<StandardPredicate> localCopyOpenPredicates;
     private List<StandardPredicate> localCopyClosedPredicates;
     private Map<Integer, List<StandardPredicate>> arityToPredicates;
-    protected Map<StandardPredicate, StandardPredicate> open2BlockPred;
 
 
     public LocalRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
@@ -35,7 +34,6 @@ public class LocalRandomRuleGenerator extends LocalRuleTemplate implements DRLRu
         for (StandardPredicate p : this.openPredicates) {
             this.localCopyOpenPredicates.add(p);
         }
-        this.open2BlockPred = open2BlockPred;
         for (StandardPredicate p : open2BlockPred.values()){
             this.localCopyClosedPredicates.remove(p);
             this.localCopyPredicates.remove(p);

@@ -15,7 +15,6 @@ public class PathRandomRuleGenerator extends PathRuleTemplate implements DRLRule
     private List<StandardPredicate> localCopyPredicates;
     private List<StandardPredicate> localCopyOpenPredicates;
     private List<StandardPredicate> localCopyClosedPredicates;
-    protected Map<StandardPredicate, StandardPredicate> open2BlockPred;
 
     public PathRandomRuleGenerator(Set<StandardPredicate> closedPredicates, Set<StandardPredicate> openPredicates){
         this(closedPredicates, openPredicates, new HashMap<StandardPredicate, StandardPredicate>());
@@ -33,7 +32,6 @@ public class PathRandomRuleGenerator extends PathRuleTemplate implements DRLRule
         for (StandardPredicate p : this.openPredicates) {
             this.localCopyOpenPredicates.add(p);
         }
-        this.open2BlockPred = open2BlockPred;
         for (StandardPredicate p : open2BlockPred.values()){
             this.localCopyClosedPredicates.remove(p);
             this.localCopyPredicates.remove(p);

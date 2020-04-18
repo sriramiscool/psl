@@ -54,14 +54,15 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
         }
 
         String blockStr = Config.getString(BLOCK_PRED_MAP_KEY, null);
-        Map<String, StandardPredicate> openPredicateStrMap = new HashMap<>();
+        Map<String, StandardPredicate> predicateStrMap = new HashMap<>();
         Map<String, StandardPredicate> closedPredicateStrMap = new HashMap<>();
         Map<StandardPredicate, StandardPredicate> open2BlockPred = new HashMap<>();
         for (StandardPredicate p: openPredicates){
-            openPredicateStrMap.put(p.getName().toUpperCase(), p);
+            predicateStrMap.put(p.getName().toUpperCase(), p);
         }
         for (StandardPredicate p: closedPredicates){
             closedPredicateStrMap.put(p.getName().toUpperCase(), p);
+            predicateStrMap.put(p.getName().toUpperCase(), p);
         }
 
         if(blockStr != null){
@@ -79,7 +80,7 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
                 }
                 String blk = b2o[0].toUpperCase();
                 String opn = b2o[1].toUpperCase();
-                open2BlockPred.put(openPredicateStrMap.get(opn), closedPredicateStrMap.get(blk));
+                open2BlockPred.put(predicateStrMap.get(opn), closedPredicateStrMap.get(blk));
             }
         }
         this.idToTemplate = new HashMap<>();
@@ -93,7 +94,7 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
     @Override
     protected void doLearn() {
 
-        for (int i = 0; i < this.numIte; i++) {
+        for (int i = 0; i < RandUtils.nextInt(this.numIte); i++) {
             this.populateNextRulesOfModel();
             double metric = this.evaluator.getRepresentativeMetric();
             if (!this.evaluator.isHigherRepresentativeBetter()){
