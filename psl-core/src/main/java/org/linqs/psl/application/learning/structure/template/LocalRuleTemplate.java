@@ -34,19 +34,32 @@ public class LocalRuleTemplate extends AbstractRuleTemplate {
         return predicates;
     }
 
+    //Assuming the ordering will be proper.
+    protected boolean isValidDomain(StandardPredicate head, StandardPredicate body){
+        String[] headDomain = head.getDomains();
+        String[] bodyDomain = body.getDomains();
+        int smallerArity = headDomain.length < bodyDomain.length ? headDomain.length : bodyDomain.length;
+        for (int i = 0; i < smallerArity; i++) {
+            if (!headDomain[i].equals(bodyDomain[i])) {
+                return false;
+            }
+        }
+        return true;
+
+    }
+
     @Override
     public boolean isValid(List<StandardPredicate> predicates, List<Boolean> isNegated) {
         if (predicates.size() < 2) {
             return false;
         }
-        if (!openPredicates.contains(predicates.get(predicates.size()-1))){
+        StandardPredicate head = predicates.get(predicates.size()-1);
+        if (!openPredicates.contains(head)){
             return false;
         }
-        Set<String> headDomian = new HashSet<String>(Arrays.asList(predicates.get(predicates.size()-1).getDomains()));
         int countClosed = 0;
         for (StandardPredicate p : predicates) {
-            Set<String> curDomains = new HashSet<String>(Arrays.asList(p.getDomains()));
-            if (!((headDomian.containsAll(curDomains) || curDomains.containsAll(headDomian)))){
+            if (!(isValidDomain(head, p))){
                 return false;
             }
             if (this.closedPredicates.contains(p)) {

@@ -58,11 +58,9 @@ public class LocalRandomRuleGenerator extends LocalRuleTemplate implements DRLRu
         List<StandardPredicate> predicates = new ArrayList<>();
         List<Boolean> isNegated = new ArrayList<>();
         StandardPredicate headPredicate = this.localCopyOpenPredicates.get(RandUtils.nextInt(this.localCopyOpenPredicates.size()));
-        Set<String> headDomian = new HashSet<>(Arrays.asList(headPredicate.getDomains()));
         List<StandardPredicate> possiblePredicates = new ArrayList<>();
         for (StandardPredicate p : this.localCopyClosedPredicates) {
-            Set<String> curDomains = new HashSet<>(Arrays.asList(p.getDomains()));
-            if (headDomian.containsAll(curDomains) || curDomains.containsAll(headDomian)){
+            if (isValidDomain(headPredicate, p)){
                 possiblePredicates.add(p);
             }
         }
