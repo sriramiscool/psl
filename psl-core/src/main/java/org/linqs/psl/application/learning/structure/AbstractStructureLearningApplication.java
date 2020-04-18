@@ -312,6 +312,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
 
         // Remove excess parens.
         outModel = outModel.replaceAll("\\( | \\)", "");
+        outModel += "\n// Metric obtained was: " + this.bestValueForRulesSoFar;
 
         try (FileWriter learnedFileWriter = new FileWriter(new File(learnedFilename))) {
             learnedFileWriter.write(outModel);
