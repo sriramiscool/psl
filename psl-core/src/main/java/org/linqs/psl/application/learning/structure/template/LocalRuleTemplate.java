@@ -8,6 +8,7 @@ import org.linqs.psl.model.formula.Negation;
 import org.linqs.psl.model.predicate.StandardPredicate;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
+import org.linqs.psl.model.term.Term;
 import org.linqs.psl.model.term.Variable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,10 +58,11 @@ public class LocalRuleTemplate implements RuleTemplate {
         if (!openPredicates.contains(predicates.get(predicates.size()-1))){
             return false;
         }
-        String[] headDomian = predicates.get(predicates.size()-1).getDomains();
+        Set<String> headDomian = new HashSet<String>(Arrays.asList(predicates.get(predicates.size()-1).getDomains()));
         int countClosed = 0;
         for (StandardPredicate p : predicates) {
-            if (!Arrays.equals(p.getDomains(), headDomian)){
+            Set<String> curDomains = new HashSet<String>(Arrays.asList(p.getDomains()));
+            if (!(headDomian.containsAll(curDomains) || curDomains.containsAll(headDomian))){
                 return false;
             }
             if (this.closedPredicates.contains(p)) {
@@ -78,17 +80,34 @@ public class LocalRuleTemplate implements RuleTemplate {
             throw new IllegalArgumentException("all predicates must have same arity and " +
                     "head must be open and body closed.");
         }
-        Set<StandardPredicate> set = new HashSet<>();
+        Set<StandardPredicate> setBodyPred = new HashSet<>();
+        Map<String, Variable> domainToVar = new HashMap<>();
+        int varId = 0;
         for(int i = 0 ; i < predicates.size()-1; i++){
-            set.add(predicates.get(i));
+            setBodyPred.add(predicates.get(i));
+            for (int j = 0 ; j < predicates.get(i).getDomains().length; j++) {
+                String[] domains = predicates.get(i).getDomains();
+                if (!domainToVar.containsKey(domains[j])) {
+                    domainToVar.put(domains[j], new Variable("A" + Integer.toString(varId++)));
+                }
+            }
         }
+
+        for (int j = 0 ; j < predicates.get(predicates.size()-1).getDomains().length; j++) {
+            String[] domains = predicates.get(predicates.size() - 1).getDomains();
+            if (!domainToVar.containsKey(domains[j])) {
+                domainToVar.put(domains[j], new Variable("A" + Integer.toString(varId++)));
+            }
+        }
+
         List<Formula> qatoms = new ArrayList<>();
-        Variable[] vars = new Variable[predicates.get(0).getArity()];
-        for (int i = 0; i < vars.length; i++) {
-            vars[i] = new Variable("A" + Integer.toString(i));
-        }
         int i = 0;
-        for (StandardPredicate s:set) {
+        for (StandardPredicate s:setBodyPred) {
+            String[] domains = s.getDomains();
+            Term[] vars = new Term[domains.length];
+            for (int j = 0; j < domains.length; j++) {
+                vars[j] = domainToVar.get(domains[j]);
+            }
             Formula q = (new QueryAtom(s, vars));
             q = isNegated.get(i) ? new Negation(q):q;
             qatoms.add(q);
@@ -97,10 +116,15 @@ public class LocalRuleTemplate implements RuleTemplate {
             }
             i++;
         }
-        Formula head = new QueryAtom(predicates.get(predicates.size()-1), vars);
+        String[] headDomains = predicates.get(predicates.size()-1).getDomains();
+        Term[] headVars = new Term[headDomains.length];
+        for (int j = 0; j < headDomains.length; j++) {
+            headVars[j] = domainToVar.get(headDomains[j]);
+        }
+        Formula head = new QueryAtom(predicates.get(predicates.size()-1), headVars);
         head = isNegated.get(predicates.size()-1) ? new Negation(head):head;
         if(open2BlockPred.containsKey(predicates.get(predicates.size()-1))){
-            qatoms.add(new QueryAtom(open2BlockPred.get(predicates.get(predicates.size()-1)), vars));
+            qatoms.add(new QueryAtom(open2BlockPred.get(predicates.get(predicates.size()-1)), headVars));
         }
         Formula[] temp = new Formula[qatoms.size()];
         Formula[] qar = qatoms.toArray(temp);
