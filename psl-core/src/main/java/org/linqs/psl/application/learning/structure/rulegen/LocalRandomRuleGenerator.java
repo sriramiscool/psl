@@ -68,16 +68,15 @@ public class LocalRandomRuleGenerator extends LocalRuleTemplate implements DRLRu
             log.debug("Failed to generate a rule");
             return null;
         }
-        Set<StandardPredicate> usedPredicate = new HashSet<>();
         for (int i = 0; i < newRuleLen - 1; i++) {
             StandardPredicate p = possiblePredicates.get(RandUtils.nextInt(possiblePredicates.size()));
-            if (usedPredicate.contains(p)){
-                break;
-            }
             predicates.add(p);
 //            isNegated.add(RandUtils.nextBoolean());
             isNegated.add(false);
-            usedPredicate.add(p);
+            possiblePredicates.remove(p);
+            if (possiblePredicates.size() == 0) {
+                break;
+            }
         }
         predicates.add(headPredicate);
 //        isNegated.add(RandUtils.nextBoolean());

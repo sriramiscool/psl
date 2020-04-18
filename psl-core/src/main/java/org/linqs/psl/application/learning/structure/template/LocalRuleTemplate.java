@@ -34,18 +34,28 @@ public class LocalRuleTemplate extends AbstractRuleTemplate {
         return predicates;
     }
 
-    //Assuming the ordering will be proper.
     protected boolean isValidDomain(StandardPredicate head, StandardPredicate body){
-        String[] headDomain = head.getDomains();
-        String[] bodyDomain = body.getDomains();
-        int smallerArity = headDomain.length < bodyDomain.length ? headDomain.length : bodyDomain.length;
-        for (int i = 0; i < smallerArity; i++) {
-            if (!headDomain[i].equals(bodyDomain[i])) {
-                return false;
+        Set<String> headDomainSet = getDomainSet(head);
+        Set<String> bodyDomainSet = getDomainSet(body);
+        if(headDomainSet.containsAll(bodyDomainSet) || bodyDomainSet.containsAll(headDomainSet)){
+            return true;
+        }
+        return false;
+
+    }
+
+    private Set<String> getDomainSet(StandardPredicate head) {
+        Map<String, Integer> headDomainSet = new HashMap<>();
+        for (int i = 0; i < head.getArity(); i++) {
+            String[] headDomains = head.getDomains();
+            if (headDomainSet.containsKey(headDomains[i])) {
+                headDomainSet.put(headDomains[i]+headDomainSet.get(headDomains[i]),
+                        headDomainSet.get(headDomains[i])+1);
+            } else {
+                headDomainSet.put(headDomains[i], 0);
             }
         }
-        return true;
-
+        return headDomainSet.keySet();
     }
 
     @Override
