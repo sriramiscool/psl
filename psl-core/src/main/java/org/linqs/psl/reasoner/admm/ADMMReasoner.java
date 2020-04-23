@@ -441,7 +441,7 @@ public class ADMMReasoner implements Reasoner {
         }
         @Override
         public int compareTo(GroundRuleWithDifference o) {
-            return difference < o.difference ? 1:-1;
+            return Float.compare(o.difference, difference);
         }
     }
 
