@@ -90,6 +90,12 @@ public class ADMMReasoner implements Reasoner {
     public static final boolean OBJECTIVE_BREAK_DEFAULT = true;
 
     /**
+     * Should you write explanations.
+     */
+    public static final String PRINT_EXPLANATIONS_KEY = CONFIG_PREFIX + ".explain";
+    public static final boolean PRINT_EXPLANATIONS_DEFAULT = true;
+
+    /**
      * Possible starting values for the consensus values.
      *  - ZERO - 0.
      *  - RANDOM - Uniform sample in [0, 1].
@@ -110,6 +116,26 @@ public class ADMMReasoner implements Reasoner {
      */
     public static final String INITIAL_LOCAL_VALUE_KEY = CONFIG_PREFIX + ".initiallocalvalue";
     public static final String INITIAL_LOCAL_VALUE_DEFAULT = InitialValue.RANDOM.toString();
+
+    /**
+     * Explanations stored in this file.
+     */
+    public static final String EXPLANATION_FILE_KEY = CONFIG_PREFIX + ".explanationfile";
+    public static final String EXPLANATION_FILE_DEFAULT = "explanations.tsv";
+
+    /**
+     * Number of ground rules as explanations.
+     * Negative number implies all ground rules.
+     */
+    public static final String MAX_EXPLANATION_KEY = CONFIG_PREFIX + ".maxexplain";
+    public static final int MAX_EXPLANATION_DEFAULT = 5;
+
+    /**
+     * delta change to compute slope when generating explanations.
+     */
+    public static final String EXPLANATION_DELTA_KEY = CONFIG_PREFIX + ".explaindelta";
+    public static final float EXPLANATION_DELTA_DEFAULT = 0.1f;
+
 
     private static final float LOWER_BOUND = 0.0f;
     private static final float UPPER_BOUND = 1.0f;
@@ -144,12 +170,14 @@ public class ADMMReasoner implements Reasoner {
     private int termBlockSize;
     private int variableBlockSize;
     private boolean objectiveBreak;
+    private boolean explain;
 
     public ADMMReasoner() {
         maxIter = Config.getInt(MAX_ITER_KEY, MAX_ITER_DEFAULT);
         stepSize = Config.getFloat(STEP_SIZE_KEY, STEP_SIZE_DEFAULT);
         computePeriod = Config.getInt(COMPUTE_PERIOD_KEY, COMPUTE_PERIOD_DEFAULT);
         objectiveBreak = Config.getBoolean(OBJECTIVE_BREAK_KEY, OBJECTIVE_BREAK_DEFAULT);
+        explain = Config.getBoolean(PRINT_EXPLANATIONS_KEY, PRINT_EXPLANATIONS_DEFAULT);
 
         epsilonAbs = Config.getFloat(EPSILON_ABS_KEY, EPSILON_ABS_DEFAULT);
         if (epsilonAbs <= 0) {
@@ -294,14 +322,17 @@ public class ADMMReasoner implements Reasoner {
 
         // Updates variables
         termStore.updateVariables(consensusValues);
+        if (explain) {
+            explain(termStore);
+        }
     }
 
     private void explain(ADMMTermStore termStore){
         log.info("Starting explanations...");
         Map<Integer, List<ADMMObjectiveTerm>> gidListMap = getGlobalIdToTerms(termStore);
         float delta = 0.1f;
-        int maxExplanations = 10;
-        String saveExplanations = "explanations.tsv";
+        int maxExplanations = Config.getInt(MAX_EXPLANATION_KEY, MAX_EXPLANATION_DEFAULT);
+        String saveExplanations = Config.getString(EXPLANATION_FILE_KEY, EXPLANATION_FILE_DEFAULT);
 
         log.debug("Getting ground rule list for ever RVA to generate explanataion.");
         Map<Integer, List<GroundRuleWithDifference>> gidToGroundRule = getGidToSortedGroundRule(gidListMap, delta);
@@ -313,7 +344,7 @@ public class ADMMReasoner implements Reasoner {
             log.debug("Writing explanations to " + saveExplanations);
             FileWriter writer = new FileWriter(saveExplanations);
             for (Map.Entry<RandomVariableAtom, String> entry : explanations.entrySet()) {
-                writer.write(entry.getKey().toStringWithValue() + "\t" + entry.getValue());
+                writer.write(entry.getKey().toStringWithValue() + "\t" + entry.getValue() + "\n");
             }
             writer.close();
             log.debug("Successfully written explanations.");
@@ -334,7 +365,7 @@ public class ADMMReasoner implements Reasoner {
                 if (i == maxExplanations) {
                     break;
                 }
-                explanation += "\t" + grwd.toString() + ";"+grwd.difference;
+                explanation += "\t" + grwd.toString();
                 i++;
             }
             if (!explanation.equals("")) {
@@ -359,9 +390,9 @@ public class ADMMReasoner implements Reasoner {
                 GroundRule groundRule = admmObjectiveTerms.get(j).getGroundRule();
                 float originalPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
                 float trueConsVal = consensusValues[i];
-                consensusValues[i] = trueConsVal + delta;
+                consensusValues[i] = Math.min(trueConsVal + delta, 1.0f);
                 float plusPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
-                consensusValues[i] = trueConsVal - delta;
+                consensusValues[i] = Math.max(trueConsVal - delta, 0.0f);
                 float minusPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
                 consensusValues[i] = trueConsVal;
                 float slope = (Math.abs(originalPot - plusPot) + Math.abs(originalPot - minusPot))/2.0f;
@@ -387,14 +418,16 @@ public class ADMMReasoner implements Reasoner {
                 if (listOfGA == null) {
                     listOfGA = new ArrayList<>();
                 }
-                listOfGA.add(admmObjectiveTerm);
+                if (admmObjectiveTerm.getGroundRule().getRule().isWeighted()) {
+                    listOfGA.add(admmObjectiveTerm);
+                }
                 gidListMap.put(globalId, listOfGA);
             }
         }
         return gidListMap;
     }
 
-    private class GroundRuleWithDifference implements Comparable<GroundRuleWithDifference> {
+    public static class GroundRuleWithDifference implements Comparable<GroundRuleWithDifference> {
         float difference;
         GroundRule rule;
         public GroundRuleWithDifference(GroundRule rule, float difference){
@@ -403,8 +436,12 @@ public class ADMMReasoner implements Reasoner {
         }
 
         @Override
+        public String toString() {
+            return rule.toString() + ";" + difference;
+        }
+        @Override
         public int compareTo(GroundRuleWithDifference o) {
-            return difference > o.difference ? 1:0;
+            return difference < o.difference ? 1:-1;
         }
     }
 
