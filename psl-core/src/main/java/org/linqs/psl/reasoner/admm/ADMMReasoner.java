@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.admm;
 
 import org.linqs.psl.config.Config;
+import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
@@ -25,14 +26,16 @@ import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.LinearConstraintTerm;
 import org.linqs.psl.reasoner.admm.term.LocalVariable;
-import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
 import org.linqs.psl.util.RandUtils;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Uses an ADMM optimization method to optimize its GroundRules.
@@ -291,6 +294,118 @@ public class ADMMReasoner implements Reasoner {
 
         // Updates variables
         termStore.updateVariables(consensusValues);
+    }
+
+    private void explain(ADMMTermStore termStore){
+        log.info("Starting explanations...");
+        Map<Integer, List<ADMMObjectiveTerm>> gidListMap = getGlobalIdToTerms(termStore);
+        float delta = 0.1f;
+        int maxExplanations = 10;
+        String saveExplanations = "explanations.tsv";
+
+        log.debug("Getting ground rule list for ever RVA to generate explanataion.");
+        Map<Integer, List<GroundRuleWithDifference>> gidToGroundRule = getGidToSortedGroundRule(gidListMap, delta);
+
+        log.debug("Generating explanations with delta = " + delta + " and max explanations = " + maxExplanations);
+        Map<RandomVariableAtom, String> explanations = getExplanationsForRVA(termStore, maxExplanations, gidToGroundRule);
+
+        try {
+            log.debug("Writing explanations to " + saveExplanations);
+            FileWriter writer = new FileWriter(saveExplanations);
+            for (Map.Entry<RandomVariableAtom, String> entry : explanations.entrySet()) {
+                writer.write(entry.getKey().toStringWithValue() + "\t" + entry.getValue());
+            }
+            writer.close();
+            log.debug("Successfully written explanations.");
+        } catch (IOException e) {
+            throw  new RuntimeException("Unable to save Explanations: " + e);
+        }
+        log.info("Explanations generated and saved.");
+
+    }
+
+    private Map<RandomVariableAtom, String> getExplanationsForRVA(ADMMTermStore termStore, int maxExplanations, Map<Integer, List<GroundRuleWithDifference>> gidToGroundRule) {
+        Map<RandomVariableAtom, String> explanations = new HashMap<>();
+        Map<RandomVariableAtom, Integer> globalVariables = termStore.getGlobalVariables();
+        for (Map.Entry<RandomVariableAtom, Integer> entry : globalVariables.entrySet()){
+            String explanation = "";
+            int i = 0;
+            for (GroundRuleWithDifference grwd: gidToGroundRule.get(entry.getValue())){
+                if (i == maxExplanations) {
+                    break;
+                }
+                explanation += "\t" + grwd.toString() + ";"+grwd.difference;
+                i++;
+            }
+            if (!explanation.equals("")) {
+                explanation = explanation.substring(1, explanation.length());
+            }
+            explanations.put(entry.getKey(), explanation);
+        }
+        return explanations;
+    }
+
+    private Map<Integer, List<GroundRuleWithDifference>> getGidToSortedGroundRule(
+                                                        Map<Integer, List<ADMMObjectiveTerm>> gidListMap,
+                                                        float delta) {
+        Map<Integer, List<GroundRuleWithDifference>> gidToGroundRule = new HashMap<>();;
+        for (int i = 0; i < consensusValues.length; i++) {
+            List<ADMMObjectiveTerm> admmObjectiveTerms = gidListMap.get(i);
+            List<GroundRuleWithDifference> grWithDiffList = gidToGroundRule.get(i);
+            if (grWithDiffList == null) {
+                grWithDiffList = new ArrayList<>();
+            }
+            for (int j = 0; j < admmObjectiveTerms.size(); j++) {
+                GroundRule groundRule = admmObjectiveTerms.get(j).getGroundRule();
+                float originalPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
+                float trueConsVal = consensusValues[i];
+                consensusValues[i] = trueConsVal + delta;
+                float plusPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
+                consensusValues[i] = trueConsVal - delta;
+                float minusPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
+                consensusValues[i] = trueConsVal;
+                float slope = (Math.abs(originalPot - plusPot) + Math.abs(originalPot - minusPot))/2.0f;
+                GroundRuleWithDifference grWithDiff = new GroundRuleWithDifference(groundRule, slope);
+                grWithDiffList.add(grWithDiff);
+            }
+            gidToGroundRule.put(i, grWithDiffList);
+        }
+        for (List<GroundRuleWithDifference> grwd : gidToGroundRule.values()) {
+            Collections.sort(grwd);
+        }
+        return gidToGroundRule;
+    }
+
+    private Map<Integer, List<ADMMObjectiveTerm>> getGlobalIdToTerms(ADMMTermStore termStore) {
+        Map<Integer, List<ADMMObjectiveTerm>> gidListMap = new HashMap<>();
+        for (int i = 0; i < termStore.size(); i++) {
+            ADMMObjectiveTerm admmObjectiveTerm = termStore.get(i);
+            LocalVariable[] variables = admmObjectiveTerm.getVariables();
+            for (int j = 0; j < variables.length; j++) {
+                int globalId = variables[j].getGlobalId();
+                List<ADMMObjectiveTerm> listOfGA = gidListMap.get(globalId);
+                if (listOfGA == null) {
+                    listOfGA = new ArrayList<>();
+                }
+                listOfGA.add(admmObjectiveTerm);
+                gidListMap.put(globalId, listOfGA);
+            }
+        }
+        return gidListMap;
+    }
+
+    private class GroundRuleWithDifference implements Comparable<GroundRuleWithDifference> {
+        float difference;
+        GroundRule rule;
+        public GroundRuleWithDifference(GroundRule rule, float difference){
+            this.difference = difference;
+            this.rule = rule;
+        }
+
+        @Override
+        public int compareTo(GroundRuleWithDifference o) {
+            return difference > o.difference ? 1:0;
+        }
     }
 
     @Override

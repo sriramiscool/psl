@@ -4,7 +4,7 @@
 # These options are blind-passed to the CLI.
 # Ex: ./run.sh -D log4j.threshold=DEBUG
 
-readonly PSL_VERSION='2.2.1'
+readonly PSL_VERSION='2.2.0'
 readonly JAR_PATH="./psl-cli-${PSL_VERSION}.jar"
 readonly FETCH_DATA_SCRIPT='../data/fetchData.sh'
 readonly BASE_NAME='yelp'
@@ -17,7 +17,7 @@ function main() {
    trap exit SIGINT
 
    # Get the data
-   getData
+   #getData
 
    # Make sure we can run PSL.
    #check_requirements
@@ -25,7 +25,7 @@ function main() {
 
    # Run PSL
    #runWeightLearning "$@"
-   #runEvaluation "$@"
+   runEvaluation "$@"
 }
 
 function getData() {
