@@ -1,4 +1,8 @@
 predicates:
+    rating_prior/1:
+        - closed
+        - domains:
+            - constant
     user/1:
         - closed
         - domains:
@@ -97,6 +101,7 @@ predicates:
             - item
 
 observations:
+    rating_prior: ../data/yelp/0/eval/rating_prior.txt
     user: ../data/yelp/0/eval/user_obs.txt
     item: ../data/yelp/0/eval/item_obs.txt
     users_are_friends: ../data/yelp/0/eval/users_are_friends_obs.txt
