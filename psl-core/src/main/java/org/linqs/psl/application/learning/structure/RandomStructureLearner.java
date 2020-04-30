@@ -12,10 +12,9 @@ import org.linqs.psl.util.RandUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.*;
 
 /**
  * Created by sriramsrinivasan on 11/29/19.
@@ -30,14 +29,19 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
     private static final int MAX_RULE_LEN_DEFAULT = 3;
     private static final String NUM_RULES_KEY = CONFIG_PREFIX + ".numrules";
     private static final int NUM_RULES_DEFAULT = 5;
-    private static final int NUM_TRIES_PER_RULE_DEFAULT = 5;
+    private static final String EXPLAINABLE_RULES_RATIO_KEY = CONFIG_PREFIX + ".expruleratio";
+    private static final float EXPLAINABLE_RULES_RATIO_DEFAULT = -1.0f;
+    private static final int NUM_TRIES_PER_RULE_DEFAULT = 1000;
     private static final String BLOCK_PRED_MAP_KEY = CONFIG_PREFIX + ".block";
+    private static final String PRED_EXPLAIN_MAP_KEY = CONFIG_PREFIX + ".predexp";
 
     private int numIte;
     protected Map<StandardPredicate, Integer> predicateToId;
     private int numRules;
     protected Map<Integer, RandomRuleGenerator> idToTemplate;
     private int maxRuleLen;
+    private  Map<Boolean, Set<String>> explainablePredicates;
+    private float explainableRatio;
 
     public RandomStructureLearner(List<Rule> rules, Database rvDB, Database observedDB,
                                   Set<StandardPredicate> closedPredicates,
@@ -46,8 +50,42 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
         this.numIte = Config.getInt(ITERATIONS_KEY, ITERATIONS_DEFAULT);
         this.numRules = Config.getInt(NUM_RULES_KEY, NUM_RULES_DEFAULT);
         this.maxRuleLen = Config.getInt(MAX_RULE_LEN_KEY, MAX_RULE_LEN_DEFAULT);
+        this.explainableRatio = Config.getFloat(EXPLAINABLE_RULES_RATIO_KEY, EXPLAINABLE_RULES_RATIO_DEFAULT);
+        String predExplainFileName = Config.getString(PRED_EXPLAIN_MAP_KEY, null);
+        if (this.explainableRatio > 0 && predExplainFileName == null) {
+            throw new RuntimeException("Explainable ratio mentioed but " +
+                    "no file given with predicate explainability information. " +
+                    "Must pass a value for: -D " + PRED_EXPLAIN_MAP_KEY);
+        }
+        if (this.explainableRatio > 1) {
+            log.warn("Explainable ratio must be [0,1]. >1 is considered 1 and <0 implies ignore ratio. " +
+                    "Note: this produces at least these many explainable rules.");
+        }
 
         this.predicateToId = new HashMap<>();
+
+        if (predExplainFileName != null) {
+            this.explainablePredicates = new HashMap<>();
+            this.explainablePredicates.put(true, new HashSet<String>());
+            this.explainablePredicates.put(false, new HashSet<String>());
+
+            try {
+                File myObj = new File(predExplainFileName);
+                if (!myObj.exists()) {
+                    throw new RuntimeException("Explainable predicates file does not exist : " + predExplainFileName);
+                }
+                Scanner myReader = new Scanner(myObj);
+                while (myReader.hasNextLine()) {
+                    String data = myReader.nextLine();
+                    data = data.toUpperCase();
+                    String[] split = data.split(":");
+                    this.explainablePredicates.get(split[1].contains("YES")).add(split[0]);
+                }
+                myReader.close();
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
         for (int i = 0; i < this.predicates.size() ; i++) {
             this.predicateToId.put(this.predicates.get(i), i);
@@ -114,11 +152,25 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
     private void populateNextRulesOfModel() {
         this.resetModel();
         for (int i = 0; i < this.numRules; i++){
-            RandomRuleGenerator ruleGen = idToTemplate.get(RandUtils.nextInt(idToTemplate.size()));
             int tries = 0;
             Rule r;
             do {
+                RandomRuleGenerator ruleGen = idToTemplate.get(RandUtils.nextInt(idToTemplate.size()));
                 r = ruleGen.generateRule(this.maxRuleLen);
+                //Ensure at least explainableRatio of eplainable rules.
+                if (RandUtils.nextFloat() < explainableRatio && r!=null) {
+                    String rStr = r.toString();
+                    boolean isExplainable = false;
+                    for (String s: this.explainablePredicates.get(true)){
+                        if (rStr.contains(s)) {
+                            isExplainable = true;
+                            break;
+                        }
+                    }
+                    if (!isExplainable) {
+                        r = null;
+                    }
+                }
                 tries++;
             }while (tries < NUM_TRIES_PER_RULE_DEFAULT && r == null);
             if(r == null) {
