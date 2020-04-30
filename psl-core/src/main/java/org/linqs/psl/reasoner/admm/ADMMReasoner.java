@@ -93,7 +93,7 @@ public class ADMMReasoner implements Reasoner {
      * Should you write explanations.
      */
     public static final String PRINT_EXPLANATIONS_KEY = CONFIG_PREFIX + ".explain";
-    public static final boolean PRINT_EXPLANATIONS_DEFAULT = true;
+    public static final boolean PRINT_EXPLANATIONS_DEFAULT = false;
 
     /**
      * Possible starting values for the consensus values.
@@ -394,38 +394,38 @@ public class ADMMReasoner implements Reasoner {
                 consensusValues[i] = Math.min(trueConsVal + delta, 1.0f);
                 float d = Math.abs(trueConsVal - consensusValues[i]) + 10E-8f;
                 float plusPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
-//                float plusSlope = Math.abs(plusPot-originalPot)/d;
+                float plusSlope = Math.abs(plusPot-originalPot)/d;
 
                 consensusValues[i] = Math.max(trueConsVal - delta, 0.0f);
                 d = Math.abs(trueConsVal - consensusValues[i]) + 10E-8f;
                 float minusPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
-//                float minusSlope = Math.abs(minusPot-originalPot)/d;
-//
-//                float smallSlope = Math.max(minusSlope, plusSlope) + 10E-6f;
-//
-//
-//                consensusValues[i] = Math.min(trueConsVal - delta + 0.2f, 1.0f);
-//                d = Math.abs(Math.min(trueConsVal + 0.2f, 1.0f) - consensusValues[i]) + 10E-8f;
-//                plusPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
-//                consensusValues[i] = Math.min(trueConsVal + 0.2f, 1.0f);
-//                originalPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
-//                plusSlope = Math.abs(plusPot-originalPot)/d;
-//
-//                consensusValues[i] = Math.max(trueConsVal + delta - 0.2f, 0.0f);
-//                d = Math.abs(Math.max(trueConsVal - 0.2f, 0.0f) - consensusValues[i]) + 10E-8f;
-//                minusPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
-//                consensusValues[i] = Math.max(trueConsVal - 0.2f, 0.0f);
-//                originalPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
-//                minusSlope = Math.abs(minusPot-originalPot)/d;
-//
-//                float bigSlope = Math.max(minusSlope, plusSlope);
+                float minusSlope = Math.abs(minusPot-originalPot)/d;
+
+                float smallSlope = Math.max(minusSlope, plusSlope) + 10E-6f;
+
+
+                consensusValues[i] = Math.min(trueConsVal - delta + 0.2f, 1.0f);
+                d = Math.abs(Math.min(trueConsVal + 0.2f, 1.0f) - consensusValues[i]) + 10E-8f;
+                plusPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
+                consensusValues[i] = Math.min(trueConsVal + 0.2f, 1.0f);
+                originalPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
+                plusSlope = Math.abs(plusPot-originalPot)/d;
+
+                consensusValues[i] = Math.max(trueConsVal + delta - 0.2f, 0.0f);
+                d = Math.abs(Math.max(trueConsVal - 0.2f, 0.0f) - consensusValues[i]) + 10E-8f;
+                minusPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
+                consensusValues[i] = Math.max(trueConsVal - 0.2f, 0.0f);
+                originalPot = admmObjectiveTerms.get(j).evaluate(consensusValues);
+                minusSlope = Math.abs(minusPot-originalPot)/d;
+
+                float bigSlope = Math.max(minusSlope, plusSlope);
 
 
                 consensusValues[i] = trueConsVal;
 //                float slope = Math.max(Math.abs(originalPot - plusPot), Math.abs(originalPot - minusPot));
 //                float slope = Math.max(Math.abs(plusPot/originalPot), Math.abs(minusPot/originalPot));
-                float slope = Math.max((originalPot - plusPot),(originalPot - minusPot));
-//                float slope = bigSlope-smallSlope;
+//                float slope = Math.max((originalPot - plusPot),(originalPot - minusPot));
+                float slope = bigSlope;//-smallSlope;
                 GroundRuleWithDifference grWithDiff = new GroundRuleWithDifference(groundRule, slope);
                 grWithDiffList.add(grWithDiff);
             }

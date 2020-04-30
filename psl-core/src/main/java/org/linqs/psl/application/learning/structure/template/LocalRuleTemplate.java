@@ -87,6 +87,9 @@ public class LocalRuleTemplate extends AbstractRuleTemplate {
             throw new IllegalArgumentException("all predicates must have same arity and " +
                     "head must be open and body closed.");
         }
+        if (donotNegate){
+            resetIsNegated(isNegated);
+        }
         Set<StandardPredicate> setBodyPred = new HashSet<>();
         Map<String, Variable> domainToVar = new HashMap<>();
         int varId = 0;

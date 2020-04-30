@@ -75,8 +75,8 @@ public class SimRandomRuleGenerator extends SimRuleTemplate implements DRLRuleGe
         predicates.add(possiblePredicates.get(RandUtils.nextInt(possiblePredicates.size())));
         isNegated.add(RandUtils.nextBoolean());
         predicates.add(headPredicate);
-//        isNegated.add(RandUtils.nextBoolean());
-        isNegated.add(false);
+        isNegated.add(RandUtils.nextBoolean());
+//        isNegated.add(false);
         return getRule(predicates, isNegated, true, 0);
     }
 

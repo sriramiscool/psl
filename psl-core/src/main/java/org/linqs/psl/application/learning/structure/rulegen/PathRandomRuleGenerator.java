@@ -72,8 +72,8 @@ public class PathRandomRuleGenerator extends PathRuleTemplate implements DRLRule
                 }
                 nextPredicate = finalValidPredicates.get(RandUtils.nextInt(finalValidPredicates.size()));
                 predicates.add(nextPredicate);
-//            isNegated.add(RandUtils.nextBoolean());
-                isNegated.add(false);
+                isNegated.add(RandUtils.nextBoolean());
+//                isNegated.add(false);
 
                 break;
             }
@@ -89,13 +89,13 @@ public class PathRandomRuleGenerator extends PathRuleTemplate implements DRLRule
             }
             nextPredicate = validPredicates.get(RandUtils.nextInt(validPredicates.size()));
             predicates.add(nextPredicate);
-//            isNegated.add(RandUtils.nextBoolean());
-            isNegated.add(false);
+            isNegated.add(RandUtils.nextBoolean());
+//            isNegated.add(false);
             prevDomain = nextPredicate.getDomains()[1];
         }
         predicates.add(headPredicate);
-//        isNegated.add(RandUtils.nextBoolean());
-        isNegated.add(false);
+        isNegated.add(RandUtils.nextBoolean());
+//        isNegated.add(false);
         return getRule(predicates, isNegated, true, 0);
     }
 

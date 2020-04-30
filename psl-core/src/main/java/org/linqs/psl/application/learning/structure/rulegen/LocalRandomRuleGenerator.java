@@ -71,16 +71,16 @@ public class LocalRandomRuleGenerator extends LocalRuleTemplate implements DRLRu
         for (int i = 0; i < newRuleLen - 1; i++) {
             StandardPredicate p = possiblePredicates.get(RandUtils.nextInt(possiblePredicates.size()));
             predicates.add(p);
-//            isNegated.add(RandUtils.nextBoolean());
-            isNegated.add(false);
+            isNegated.add(RandUtils.nextBoolean());
+//            isNegated.add(false);
             possiblePredicates.remove(p);
             if (possiblePredicates.size() == 0) {
                 break;
             }
         }
         predicates.add(headPredicate);
-//        isNegated.add(RandUtils.nextBoolean());
-        isNegated.add(false);
+        isNegated.add(RandUtils.nextBoolean());
+//        isNegated.add(false);
         return getRule(predicates, isNegated, true, 0);
     }
 

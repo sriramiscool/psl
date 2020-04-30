@@ -82,13 +82,18 @@ public class PathRuleTemplate extends AbstractRuleTemplate {
         if (!isValid(predicates, isNegated)){
             throw new IllegalArgumentException("All predicates must have arity = 2.");
         }
+        if (donotNegate){
+            resetIsNegated(isNegated);
+        }
         Variable v1 = new Variable("A0");
         Variable firstVar = v1;
         Variable v2 = new Variable("A1");
         List<Formula> qatoms = new ArrayList<>();
         for (int i = 0; i < predicates.size()-1; i++) {
-            qatoms.add(new QueryAtom(predicates.get(i), v1, v2));
-            //qatoms[i] = isNegated.get(i) ? new Negation(qatoms[i]) : qatoms[i];
+//            qatoms.add(new QueryAtom(predicates.get(i), v1, v2));
+            qatoms.add(isNegated.get(i) ? new Negation(new QueryAtom(predicates.get(i), v1, v2)) :
+                    new QueryAtom(predicates.get(i), v1, v2));
+//            qatoms[i] = isNegated.get(i) ? new Negation(qatoms[i]) : qatoms[i];
             if (open2BlockPred.containsKey(predicates.get(i))) {
                 qatoms.add(new QueryAtom(open2BlockPred.get(predicates.get(i)), v1, v2));
             }

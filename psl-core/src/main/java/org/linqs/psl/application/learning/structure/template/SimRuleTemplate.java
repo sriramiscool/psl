@@ -89,8 +89,11 @@ public class SimRuleTemplate extends AbstractRuleTemplate {
             throw new IllegalArgumentException("Sim template needs three predicates with first and " +
                     "last the same and each with arity = 2.");
         }
+        if (donotNegate){
+            resetIsNegated(isNegated);
+        }
         Formula q1 = new QueryAtom(predicates.get(0), v1, v2);
-        //q1 = isNegated.get(0) ? new Negation(q1):q1;
+        q1 = isNegated.get(0) ? new Negation(q1):q1;
         Formula q2, q3;
         int headInd = 2;
 
