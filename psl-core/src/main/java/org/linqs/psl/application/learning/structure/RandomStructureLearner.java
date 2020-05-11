@@ -132,18 +132,18 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
     @Override
     protected void doLearn() {
 
-        for (int i = 0; i < RandUtils.nextInt(this.numIte); i++) {
+        for (int i = 0; i < this.numIte; i++) {
             this.populateNextRulesOfModel();
             double metric = this.evaluator.getRepresentativeMetric();
             if (!this.evaluator.isHigherRepresentativeBetter()){
                 metric *= -1;
             }
-            if (metric > this.bestValueForRulesSoFar){
+            if (metric > this.bestValueForRulesSoFar && this.mutableRules.size() > 0){
                 this.bestValueForRulesSoFar = metric;
                 this.bestRulesSoFar.clear();
                 this.bestRulesSoFar.addAll(this.allRules);
                 log.debug("Got a better model with metric: " + metric);
-                checkpointModel();
+                checkpointModel(i);
             }
         }
 
@@ -151,7 +151,8 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
 
     private void populateNextRulesOfModel() {
         this.resetModel();
-        for (int i = 0; i < this.numRules; i++){
+        int numRules = RandUtils.nextInt(this.numRules-1)+1;
+        for (int i = 0; i < numRules; i++){
             int tries = 0;
             Rule r;
             do {
