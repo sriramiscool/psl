@@ -89,7 +89,7 @@ public abstract class AbstractStructureLearningApplication implements ModelAppli
      */
 //    public static final String WLEARNER_KEY = CONFIG_PREFIX + ".wlearning";
 //    public static final String WLEARNER_DEFAULT = MaxPiecewisePseudoLikelihood.class.getName();
-    private static final String CHECKPOINT_KEY = CONFIG_PREFIX + "checkpoint";
+    private static final String CHECKPOINT_KEY = CONFIG_PREFIX + ".checkpoint";
     private static final String CHECKPOINT_DEFAULT = "checkpoint_model_learned";
     protected final List<StandardPredicate> predicates;
     protected final Set<StandardPredicate> openPredicates;
