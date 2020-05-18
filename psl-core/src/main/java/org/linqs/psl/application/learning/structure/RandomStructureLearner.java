@@ -151,7 +151,7 @@ public class RandomStructureLearner extends AbstractStructureLearningApplication
 
     private void populateNextRulesOfModel() {
         this.resetModel();
-        int numRules = RandUtils.nextInt(this.numRules-1)+1;
+        int numRules = RandUtils.nextInt(this.numRules-1)+5;
         for (int i = 0; i < numRules; i++){
             int tries = 0;
             Rule r;
