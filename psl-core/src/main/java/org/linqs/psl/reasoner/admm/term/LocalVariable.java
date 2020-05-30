@@ -18,6 +18,7 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
+import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
 
@@ -74,7 +75,12 @@ public class LocalVariable implements ReasonerLocalVariable {
             return false;
         }
 
-        return this.globalId == ((LocalVariable)other).globalId;
+        LocalVariable oth = (LocalVariable) other;
+        if (!MathUtils.equals(lagrange, oth.lagrange) || !MathUtils.equals(value, oth.value) ) {
+            return false;
+        }
+
+        return this.globalId == oth.globalId;
     }
 
     public String toString() {

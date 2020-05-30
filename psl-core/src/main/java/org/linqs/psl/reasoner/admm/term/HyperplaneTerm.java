@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
 
@@ -138,7 +139,7 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
         int bitSize = super.fixedByteSize();
         bitSize += Float.SIZE / 8; //constant
         for (int i = 0; i < size; i++){
-            bitSize += Float.SIZE * 3 / 8; // unitNorm, point, coefficient
+            bitSize += Float.SIZE / 8; // coefficient
         }
 
         return bitSize;
@@ -151,8 +152,6 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
 
         for (int i = 0; i < size; i++) {
             fixedBuffer.putFloat(coefficients[i]);
-            fixedBuffer.putFloat(point[i]);
-            fixedBuffer.putFloat(unitNormal[i]);
         }
     }
 
@@ -168,14 +167,47 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
         if (coefficients.length < size) {
             coefficients = new float[size];
         }
-        if (unitNormal.length < size) {
+        if (unitNormal ==null || unitNormal.length < size) {
             unitNormal = new float[size];
         }
 
         for (int i = 0; i < size; i++) {
             coefficients[i] = fixedBuffer.getFloat();
-            point[i] = fixedBuffer.getFloat();
-            unitNormal[i] = fixedBuffer.getFloat();
         }
+
+        if (size >= 3) {
+            // Finds a unit vector normal to the hyperplane and a point in the hyperplane for future projections.
+            float length = 0.0f;
+            for (int i = 0; i < size; i++) {
+                length += coefficients[i] * coefficients[i];
+            }
+            length = (float)Math.sqrt(length);
+
+            for (int i = 0; i < size; i++) {
+                unitNormal[i] = coefficients[i] / length;
+            }
+        }
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if (o==null || !super.equals(o)){
+            return false;
+        }
+        if (!(o instanceof HyperplaneTerm)){
+            return false;
+        }
+        HyperplaneTerm oth = (HyperplaneTerm) o;
+        if (oth.constant != constant){
+            return false;
+        }
+        for (int i = 0; i < size ; i++){
+            if (!MathUtils.equals(coefficients[i], oth.coefficients[i]) ||
+                    !MathUtils.equals(point[i], oth.point[i]) ||
+                    (size > 3 && !MathUtils.equals(unitNormal[i], oth.unitNormal[i]))){
+                return false;
+            }
+        }
+        return true;
     }
 }

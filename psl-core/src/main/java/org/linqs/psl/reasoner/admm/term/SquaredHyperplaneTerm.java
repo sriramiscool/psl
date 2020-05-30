@@ -21,6 +21,7 @@ import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.FloatMatrix;
 import org.linqs.psl.util.HashCode;
+import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -224,7 +225,7 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
         int bitSize = super.fixedByteSize();
         bitSize += Float.SIZE / 8; //constant
         for (int i = 0; i < size; i++){
-            bitSize += Float.SIZE / 8; // unitNorm, point, coefficient
+            bitSize += Float.SIZE / 8; // coefficient
         }
 
         return bitSize;
@@ -254,5 +255,29 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
             coefficients[i] = fixedBuffer.getFloat();
         }
         lowerTriangle = null;
+    }
+
+
+    @Override
+    public boolean equals(Object o){
+        if (o==null || !super.equals(o)){
+            return false;
+        }
+        if (!(o instanceof SquaredHyperplaneTerm)){
+            return false;
+        }
+        SquaredHyperplaneTerm oth = (SquaredHyperplaneTerm) o;
+        if (oth.constant != constant || (lowerTriangle != null && !lowerTriangle.equals(oth.lowerTriangle))){
+            return false;
+        }
+        if (oth.lowerTriangle != null && lowerTriangle == null) {
+            return false;
+        }
+        for (int i = 0; i < size ; i++){
+            if (!MathUtils.equals(coefficients[i], oth.coefficients[i])){
+                return false;
+            }
+        }
+        return true;
     }
 }

@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
 
@@ -81,7 +82,6 @@ public class LinearLossTerm extends ADMMObjectiveTerm {
     @Override
     public int fixedByteSize() {
         int bitSize = super.fixedByteSize();
-        bitSize += Float.SIZE / 8; //constant
         for (int i = 0; i < size; i++){
             bitSize += Float.SIZE / 8; // coefficient
         }
@@ -110,5 +110,23 @@ public class LinearLossTerm extends ADMMObjectiveTerm {
         for (int i = 0; i < size; i++) {
             coefficients[i] = fixedBuffer.getFloat();
         }
+    }
+
+
+    @Override
+    public boolean equals(Object o){
+        if (o==null || !super.equals(o)){
+            return false;
+        }
+        if (!(o instanceof LinearLossTerm)){
+            return false;
+        }
+        LinearLossTerm oth = (LinearLossTerm) o;
+        for (int i = 0; i < size ; i++){
+            if (!MathUtils.equals(coefficients[i], oth.coefficients[i])){
+                return false;
+            }
+        }
+        return true;
     }
 }

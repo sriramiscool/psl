@@ -132,4 +132,17 @@ public class LinearConstraintTerm extends HyperplaneTerm {
         super.read(fixedBuffer, volatileBuffer);
         comparator = FunctionComparator.values()[fixedBuffer.getInt()];
     }
+
+
+    @Override
+    public boolean equals(Object o){
+        if (o==null || !super.equals(o)){
+            return false;
+        }
+        if (!(o instanceof LinearConstraintTerm)){
+            return false;
+        }
+        LinearConstraintTerm oth = (LinearConstraintTerm) o;
+        return comparator.equals(oth.comparator);
+    }
 }

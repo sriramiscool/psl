@@ -128,7 +128,27 @@ public abstract class ADMMObjectiveTerm implements ReasonerTerm {
         }
 
         for (int i = 0; i < size; i++) {
+            if (variables[i] == null){
+                variables[i] = new LocalVariable(-1,-1);
+            }
             variables[i].read(fixedBuffer, volatileBuffer);
         }
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if (o==null || !(o instanceof ADMMObjectiveTerm)) {
+            return false;
+        }
+        ADMMObjectiveTerm oth = (ADMMObjectiveTerm) o;
+        if (ruleIndex != oth.ruleIndex || size != oth.size) {
+            return false;
+        }
+        for (int i = 0; i < size; i++) {
+            if (!variables[i].equals(oth.variables[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 }
