@@ -20,16 +20,25 @@ package org.linqs.psl.reasoner.term;
 import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
+import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.util.RandUtils;
 
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.*;
 
 public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, RandomVariableAtom> {
     private ArrayList<T> store;
 
+    /**
+     * hold array of rules and indecies
+     */
+    protected List<Rule> rules;
+    protected Map<Rule, Integer> ruleToIndex;
+
     public MemoryTermStore() {
         this(Options.MEMORY_TS_INITIAL_SIZE.getInt());
+        rules = new ArrayList<>();
+        ruleToIndex = new HashMap<>();
     }
 
     public MemoryTermStore(int initialSize) {
@@ -38,7 +47,34 @@ public class MemoryTermStore<T extends ReasonerTerm> implements TermStore<T, Ran
 
     @Override
     public synchronized void add(GroundRule rule, T term) {
+        if (!ruleToIndex.containsKey(rule.getRule())) {
+            throw new RuntimeException("Rule not added before adding ground rule.");
+        }
         store.add(term);
+    }
+
+    @Override
+    public double getWeight(int index){
+        if (rules.get(index) == null){
+            throw new RuntimeException("Something is seriously wrong. Rule is accessed before adding or index issue.");
+        }
+        if (rules.get(index) instanceof WeightedRule){
+            return ((WeightedRule) rules.get(index)).getWeight();
+        }
+        throw new UnsupportedOperationException("Rule not weighted: " + rules.get(index).toString());
+    }
+
+    @Override
+    public int getRuleInd(Rule rule) {
+        return ruleToIndex.containsKey(rule) ? ruleToIndex.get(rule) : -1;
+    }
+
+    @Override
+    public synchronized void addRule(Rule rule) {
+        if (!ruleToIndex.containsKey(rule)) {
+            ruleToIndex.put(rule, rules.size());
+            rules.add(rule);
+        }
     }
 
     @Override

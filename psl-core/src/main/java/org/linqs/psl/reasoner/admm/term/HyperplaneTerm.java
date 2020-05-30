@@ -17,8 +17,10 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.TermStore;
+
+import java.nio.ByteBuffer;
 
 /**
  * Objective term for an ADMMReasoner that is based on a hyperplane in some way.
@@ -29,14 +31,14 @@ import org.linqs.psl.reasoner.term.Hyperplane;
  * All coefficients must be non-zero.
  */
 public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
-    protected final float[] coefficients;
-    protected final float[] unitNormal;
-    protected final float constant;
+    protected float[] coefficients;
+    protected float[] unitNormal;
+    protected float constant;
     // Only allocate once.
-    protected final float[] point;
+    protected float[] point;
 
-    public HyperplaneTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
-        super(hyperplane, groundRule);
+    public HyperplaneTerm(Hyperplane<LocalVariable> hyperplane, int ruleIndex) {
+        super(hyperplane, ruleIndex);
 
         this.coefficients = hyperplane.getCoefficients();
         this.constant = hyperplane.getConstant();
@@ -112,7 +114,7 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
      * coefficients^T * x - constant
      */
     @Override
-    public float evaluate() {
+    public float evaluate(TermStore termStore) {
         float value = 0.0f;
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * variables[i].getValue();
@@ -122,12 +124,58 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
     }
 
     @Override
-    public float evaluate(float[] consensusValues) {
+    public float evaluate(float[] consensusValues, TermStore termStore) {
         float value = 0.0f;
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * consensusValues[variables[i].getGlobalId()];
         }
 
         return value - constant;
+    }
+
+    @Override
+    public int fixedByteSize() {
+        int bitSize = super.fixedByteSize();
+        bitSize += Float.SIZE / 8; //constant
+        for (int i = 0; i < size; i++){
+            bitSize += Float.SIZE * 3 / 8; // unitNorm, point, coefficient
+        }
+
+        return bitSize;
+    }
+
+    @Override
+    public void writeFixedValues(ByteBuffer fixedBuffer){
+        super.writeFixedValues(fixedBuffer);
+        fixedBuffer.putFloat(constant);
+
+        for (int i = 0; i < size; i++) {
+            fixedBuffer.putFloat(coefficients[i]);
+            fixedBuffer.putFloat(point[i]);
+            fixedBuffer.putFloat(unitNormal[i]);
+        }
+    }
+
+    @Override
+    public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer){
+        super.read(fixedBuffer, volatileBuffer);
+        constant = fixedBuffer.getFloat();
+
+        // Make sure that there is enough room for all.
+        if (point.length < size) {
+            point = new float[size];
+        }
+        if (coefficients.length < size) {
+            coefficients = new float[size];
+        }
+        if (unitNormal.length < size) {
+            unitNormal = new float[size];
+        }
+
+        for (int i = 0; i < size; i++) {
+            coefficients[i] = fixedBuffer.getFloat();
+            point[i] = fixedBuffer.getFloat();
+            unitNormal[i] = fixedBuffer.getFloat();
+        }
     }
 }

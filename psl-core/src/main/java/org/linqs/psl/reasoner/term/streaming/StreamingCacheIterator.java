@@ -17,6 +17,7 @@
  */
 package org.linqs.psl.reasoner.term.streaming;
 
+import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.util.RandUtils;
 
@@ -31,8 +32,8 @@ import java.util.List;
  * This iterator can be constructed as read-only.
  * In this case, pages will not be witten to disk.
  */
-public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
-    protected StreamingTermStore<T> parentStore;
+public abstract class StreamingCacheIterator<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements StreamingIterator<T> {
+    protected BasicStreamingTermStore<T, V> parentStore;
     protected int[] shuffleMap;
 
     protected boolean readonly;
@@ -60,7 +61,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm> implements 
     protected int numPages;
 
     public StreamingCacheIterator(
-            StreamingTermStore<T> parentStore, boolean readonly,
+            BasicStreamingTermStore<T, V> parentStore, boolean readonly,
             List<T> termCache, List<T> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             boolean shufflePage, int[] shuffleMap, boolean randomizePageAccess,

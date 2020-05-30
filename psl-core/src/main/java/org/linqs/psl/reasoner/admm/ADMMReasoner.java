@@ -18,18 +18,14 @@
 package org.linqs.psl.reasoner.admm;
 
 import org.linqs.psl.config.Options;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.Reasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
 import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
 import org.linqs.psl.reasoner.admm.term.LinearConstraintTerm;
 import org.linqs.psl.reasoner.admm.term.LocalVariable;
-import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -234,15 +230,15 @@ public class ADMMReasoner extends Reasoner {
 
         for (ADMMObjectiveTerm term : termStore) {
             if (term instanceof LinearConstraintTerm) {
-                if (term.evaluate(consensusValues) > 0.0f) {
+                if (term.evaluate(consensusValues, termStore) > 0.0f) {
                     violatedConstraints++;
 
                     if (logViolatedConstraints) {
-                        log.trace("    {}", term.getGroundRule());
+                        log.trace("    {}", term);
                     }
                 }
             } else {
-                objective += term.evaluate(consensusValues);
+                objective += term.evaluate(consensusValues, termStore);
             }
         }
 
@@ -292,7 +288,7 @@ public class ADMMReasoner extends Reasoner {
                 }
 
                 termStore.get(termIndex).updateLagrange(stepSize, consensusValues);
-                termStore.get(termIndex).minimize(stepSize, consensusValues);
+                termStore.get(termIndex).minimize(stepSize, consensusValues, termStore);
             }
         }
     }

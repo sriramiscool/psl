@@ -17,25 +17,28 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
+import org.linqs.psl.reasoner.term.TermStore;
+
+import java.nio.ByteBuffer;
 
 /**
  * A term in the objective to be optimized by an ADMMReasoner.
  */
 public abstract class ADMMObjectiveTerm implements ReasonerTerm {
-    protected final GroundRule groundRule;
-    protected final LocalVariable[] variables;
-    protected final int size;
+//    protected final GroundRule groundRule;
+    protected int ruleIndex;
+    protected LocalVariable[] variables;
+    protected int size;
 
     /**
      * Caller releases control of the hyperplane and all members of it.
      */
-    public ADMMObjectiveTerm(Hyperplane<LocalVariable> hyperplane, GroundRule groundRule) {
+    public ADMMObjectiveTerm(Hyperplane<LocalVariable> hyperplane, int ruleIndex) {
         this.variables = hyperplane.getVariables();
         this.size = hyperplane.size();
-        this.groundRule = groundRule;
+        this.ruleIndex = ruleIndex;
     }
 
     public void updateLagrange(float stepSize, float[] consensusValues) {
@@ -52,17 +55,17 @@ public abstract class ADMMObjectiveTerm implements ReasonerTerm {
      * argmin f(x) + stepSize / 2 * \|x - z + y / stepSize \|_2^2 <br />
      * for the objective term f(x)
      */
-    public abstract void minimize(float stepSize, float[] consensusValues);
+    public abstract void minimize(float stepSize, float[] consensusValues, TermStore store);
 
     /**
      * Evaluate this potential using the local variables.
      */
-    public abstract float evaluate();
+    public abstract float evaluate(TermStore store);
 
     /**
      * Evaluate this potential using the given consensus values.
      */
-    public abstract float evaluate(float[] consensusValues);
+    public abstract float evaluate(float[] consensusValues, TermStore store);
 
     /**
      * Get the variables used in this term.
@@ -80,7 +83,52 @@ public abstract class ADMMObjectiveTerm implements ReasonerTerm {
         return size;
     }
 
-    public GroundRule getGroundRule() {
-        return groundRule;
+    public int fixedByteSize() {
+        int bitSize =
+                Integer.SIZE  // ruleIndex
+                        + Integer.SIZE ; // size
+        bitSize = bitSize / 8;
+        for (int i = 0; i < size; i++){
+            bitSize += variables[i].fixedByteSize();
+        }
+
+        return bitSize;
+    }
+
+    public int volatileByteSize(){
+        int bitSize = 0; // size
+        for (int i = 0; i < size; i++){
+            bitSize += variables[i].volatileByteSize();
+        }
+        return bitSize;
+    }
+
+    public void writeFixedValues(ByteBuffer fixedBuffer){
+        fixedBuffer.putInt(size);
+        fixedBuffer.putInt(ruleIndex);
+
+        for (int i = 0; i < size; i++) {
+            variables[i].writeFixedValues(fixedBuffer);
+        }
+    }
+
+    public void writeVolatileValues(ByteBuffer volatileBuffer){
+        for (int i = 0; i < size; i++) {
+            variables[i].writeVolatileValues(volatileBuffer);
+        }
+    }
+
+    public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer){
+        size = fixedBuffer.getInt();
+        ruleIndex = fixedBuffer.getInt();
+
+        // Make sure that there is enough room for all these variableIndexes.
+        if (variables.length < size) {
+            variables = new LocalVariable[size];
+        }
+
+        for (int i = 0; i < size; i++) {
+            variables[i].read(fixedBuffer, volatileBuffer);
+        }
     }
 }

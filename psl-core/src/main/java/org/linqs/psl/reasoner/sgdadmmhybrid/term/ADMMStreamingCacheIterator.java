@@ -15,9 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.sgd.term;
+package org.linqs.psl.reasoner.sgdadmmhybrid.term;
 
-import org.linqs.psl.model.atom.RandomVariableAtom;
+import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
+import org.linqs.psl.reasoner.admm.term.LocalVariable;
 import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
 import org.linqs.psl.util.RuntimeStats;
 
@@ -26,10 +27,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjectiveTerm, RandomVariableAtom> {
-    public SGDStreamingCacheIterator(
-            SGDStreamingTermStore parentStore, boolean readonly,
-            List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
+public class ADMMStreamingCacheIterator extends StreamingCacheIterator<ADMMObjectiveTerm, LocalVariable> {
+    public ADMMStreamingCacheIterator(
+            ADMMStreamingTermStore parentStore, boolean readonly,
+            List<ADMMObjectiveTerm> termCache, List<ADMMObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             boolean shufflePage, int[] shuffleMap, boolean randomizePageAccess,
             int numPages) {
@@ -63,7 +64,7 @@ public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjecti
         // Use the terms from the pool.
 
         for (int i = 0; i < numTerms; i++) {
-            SGDObjectiveTerm term = termPool.get(i);
+            ADMMObjectiveTerm term = termPool.get(i);
             term.read(termBuffer, volatileBuffer);
             termCache.add(term);
         }

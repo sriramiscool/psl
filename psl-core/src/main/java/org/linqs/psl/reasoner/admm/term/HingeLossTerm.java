@@ -18,8 +18,7 @@
 package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.reasoner.term.TermStore;
 
 /**
  * ADMMReasoner objective term of the form <br />
@@ -28,13 +27,13 @@ import org.linqs.psl.model.rule.WeightedGroundRule;
  * All coefficients must be non-zero.
  */
 public class HingeLossTerm extends HyperplaneTerm {
-    public HingeLossTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
-        super(groundRule, hyperplane);
+    public HingeLossTerm(Hyperplane<LocalVariable> hyperplane, int ruleIndex) {
+        super(hyperplane, ruleIndex);
     }
 
     @Override
-    public void minimize(float stepSize, float[] consensusValues) {
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+    public void minimize(float stepSize, float[] consensusValues, TermStore termStore) {
+        float weight = (float)termStore.getWeight(ruleIndex);
         float total = 0.0f;
 
         // Minimizes without the linear loss, i.e., solves
@@ -76,14 +75,14 @@ public class HingeLossTerm extends HyperplaneTerm {
      * weight * max(0.0, coefficients^T * x - constant)
      */
     @Override
-    public float evaluate() {
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-        return weight * Math.max(super.evaluate(), 0.0f);
+    public float evaluate(TermStore termStore) {
+        float weight = (float)termStore.getWeight(ruleIndex);
+        return weight * Math.max(super.evaluate(termStore), 0.0f);
     }
 
     @Override
-    public float evaluate(float[] consensusValues) {
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-        return weight * Math.max(super.evaluate(consensusValues), 0.0f);
+    public float evaluate(float[] consensusValues, TermStore termStore) {
+        float weight = (float)termStore.getWeight(ruleIndex);
+        return weight * Math.max(super.evaluate(consensusValues, termStore), 0.0f);
     }
 }

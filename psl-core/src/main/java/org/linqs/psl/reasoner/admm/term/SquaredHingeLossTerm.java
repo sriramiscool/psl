@@ -17,36 +17,35 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.TermStore;
 
 /**
  * ADMMReasoner objective term of the form <br />
  * weight * [max(coefficients^T * x - constant, 0)]^2
  */
 public class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
-    public SquaredHingeLossTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
-        super(groundRule, hyperplane);
+    public SquaredHingeLossTerm(Hyperplane<LocalVariable> hyperplane, int ruleIndex) {
+        super(hyperplane, ruleIndex);
     }
 
     /**
      * weight * [max(coefficients^T * x - constant, 0.0)]^2
      */
     @Override
-    public float evaluate() {
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-        return weight * (float)Math.pow(Math.max(0.0f, super.evaluate()), 2);
+    public float evaluate(TermStore termStore) {
+        float weight = (float)termStore.getWeight(ruleIndex);
+        return weight * (float)Math.pow(Math.max(0.0f, super.evaluate(termStore)), 2);
     }
 
     @Override
-    public float evaluate(float[] consensusValues) {
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-        return weight * (float)Math.pow(Math.max(0.0f, super.evaluate(consensusValues)), 2);
+    public float evaluate(float[] consensusValues, TermStore termStore) {
+        float weight = (float)termStore.getWeight(ruleIndex);
+        return weight * (float)Math.pow(Math.max(0.0f, super.evaluate(consensusValues, termStore)), 2);
     }
 
     @Override
-    public void minimize(float stepSize, float[] consensusValues) {
+    public void minimize(float stepSize, float[] consensusValues, TermStore termStore) {
         // Initializes scratch data.
         float total = 0.0f;
 
@@ -65,6 +64,6 @@ public class SquaredHingeLossTerm extends SquaredHyperplaneTerm {
 
         // Else, minimizes with the quadratic loss, i.e., solves
         // argmin weight * (coefficients^T * x - constant)^2 + stepSize/2 * \|x - z + y / stepSize \|_2^2
-        minWeightedSquaredHyperplane(stepSize, consensusValues);
+        minWeightedSquaredHyperplane(stepSize, consensusValues, termStore);
     }
 }

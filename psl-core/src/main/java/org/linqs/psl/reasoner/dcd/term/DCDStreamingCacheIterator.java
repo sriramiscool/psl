@@ -26,9 +26,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Map;
 
-public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjectiveTerm> {
+public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjectiveTerm, RandomVariableAtom> {
     public DCDStreamingCacheIterator(
             DCDStreamingTermStore parentStore, boolean readonly,
             List<DCDObjectiveTerm> termCache, List<DCDObjectiveTerm> termPool,

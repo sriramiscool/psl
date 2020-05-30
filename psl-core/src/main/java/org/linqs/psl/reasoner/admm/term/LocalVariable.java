@@ -19,13 +19,15 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
 
+import java.nio.ByteBuffer;
+
 /**
  * The local context of a variable.
  * A local variable keeps track of what global (consensus) variable it is associated with.
  * Note that local variables are hashed and equated by the global variable they track.
  */
 public class LocalVariable implements ReasonerLocalVariable {
-    private final int globalId;
+    private int globalId;
     private float value;
     private float lagrange;
 
@@ -77,5 +79,35 @@ public class LocalVariable implements ReasonerLocalVariable {
 
     public String toString() {
         return String.format("(%f, %f)", value, lagrange);
+    }
+
+
+    public int fixedByteSize(){
+        int bitSize =
+                Integer.SIZE;  // globalId
+
+        return bitSize / 8;
+    }
+
+    public int volatileByteSize(){
+        int bitSize = Float.SIZE + // local var
+                      Float.SIZE;  // lagrange
+
+        return bitSize / 8;
+    }
+
+    public void writeFixedValues(ByteBuffer fixedBuffer){
+            fixedBuffer.putInt(globalId);
+    }
+
+    public void writeVolatileValues(ByteBuffer volatileBuffer){
+        volatileBuffer.putFloat(value);
+        volatileBuffer.putFloat(lagrange);
+    }
+
+    public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer){
+        globalId = fixedBuffer.getInt();
+        value = volatileBuffer.getFloat();
+        lagrange = volatileBuffer.getFloat();
     }
 }

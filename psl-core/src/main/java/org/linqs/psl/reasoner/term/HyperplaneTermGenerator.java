@@ -28,13 +28,8 @@ import org.linqs.psl.reasoner.function.ConstraintTerm;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.function.FunctionTerm;
 import org.linqs.psl.reasoner.function.GeneralFunction;
-import org.linqs.psl.reasoner.term.Hyperplane;
-import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
-import org.linqs.psl.reasoner.term.TermGenerator;
-import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,6 +104,7 @@ public abstract class HyperplaneTermGenerator<T extends ReasonerTerm, V extends 
      * The store is just needed for creating variables.
      */
     public T createTerm(GroundRule groundRule, TermStore<T, V> termStore) {
+        termStore.addRule(groundRule.getRule());
         if (groundRule instanceof WeightedGroundRule) {
             GeneralFunction function = ((WeightedGroundRule)groundRule).getFunctionDefinition();
             Hyperplane<V> hyperplane = processHyperplane(function, termStore);

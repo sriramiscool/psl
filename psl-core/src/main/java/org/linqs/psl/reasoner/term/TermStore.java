@@ -19,11 +19,9 @@ package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
+import org.linqs.psl.model.rule.Rule;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * A place to store terms that are to be optimized.
@@ -91,4 +89,20 @@ public interface TermStore<T extends ReasonerTerm, V extends ReasonerLocalVariab
      * Get an iterator over the terms in the store that does not write to disk.
      */
     public Iterator<T> noWriteIterator();
+
+    /**
+     * Get weight of any rule given its index if the rule exists in the termstore
+     */
+    public double getWeight(int index);
+
+    /**
+     * Get the rule index stored.
+     */
+    public int getRuleInd(Rule rule);
+
+    /**
+     * Add the rule index stored. Mainly so that we can keep all rules in store and
+     * keep track of weight at rule level instead of term.
+     */
+    public void addRule(Rule rule);
 }

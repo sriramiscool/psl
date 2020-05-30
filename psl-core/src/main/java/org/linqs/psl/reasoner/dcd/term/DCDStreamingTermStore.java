@@ -23,8 +23,8 @@ import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
+import org.linqs.psl.reasoner.term.streaming.RVAStreamingTermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
-import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
 import java.util.HashSet;
 import java.util.List;
@@ -36,13 +36,16 @@ import java.util.Set;
  * Remember that this class will internally iterate over an unknown number of groundings.
  * So interrupting the iteration can cause the term count to be incorrect.
  */
-public class DCDStreamingTermStore extends StreamingTermStore<DCDObjectiveTerm> {
+public class DCDStreamingTermStore extends RVAStreamingTermStore<DCDObjectiveTerm> {
     public DCDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
         super(rules, atomManager, new DCDTermGenerator());
     }
 
     @Override
     protected boolean supportsRule(Rule rule) {
+        if (!rule.isWeighted()){
+            return false;
+        }
         // Don't allow explicit priors.
         if (rule instanceof WeightedLogicalRule) {
             Set<Atom> atomSet = ((WeightedLogicalRule)rule).getFormula().getAtoms(new HashSet<Atom>());

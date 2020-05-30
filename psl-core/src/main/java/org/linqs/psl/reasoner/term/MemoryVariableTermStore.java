@@ -21,21 +21,11 @@ import org.linqs.psl.config.Options;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.predicate.model.ModelPredicate;
 import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.reasoner.term.MemoryTermStore;
-import org.linqs.psl.reasoner.term.VariableTermStore;
-
+import org.linqs.psl.model.rule.Rule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A general TermStore that handles terms and variables all in memory.
@@ -172,7 +162,25 @@ public abstract class MemoryVariableTermStore<T extends ReasonerTerm, V extends 
 
     @Override
     public void add(GroundRule rule, T term) {
+        if (store.getRuleInd(rule.getRule()) == -1) {
+            throw new RuntimeException("Rule not added before adding ground rule.");
+        }
         store.add(rule, term);
+    }
+
+    @Override
+    public int getRuleInd(Rule rule) {
+        return store.getRuleInd(rule);
+    }
+
+    @Override
+    public void addRule(Rule rule) {
+        store.addRule(rule);
+    }
+
+    @Override
+    public double getWeight(int index){
+        return store.getWeight(index);
     }
 
     @Override

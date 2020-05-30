@@ -17,12 +17,12 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.FloatMatrix;
 import org.linqs.psl.util.HashCode;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -35,8 +35,8 @@ import java.util.concurrent.Semaphore;
  * and minimizes with the weighted, squared hyperplane in the objective.
  */
 public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
-    protected final float[] coefficients;
-    protected final float constant;
+    protected float[] coefficients;
+    protected float constant;
 
     /**
      * The lower triangle in the Cholesky decomposition of the symmetric matrix:
@@ -51,8 +51,8 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
     // TODO(eriq): All the matrix work is suspect.
     // The old code was using some cache that didn't seem too useful. Could it have been?
 
-    public SquaredHyperplaneTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
-        super(hyperplane, groundRule);
+    public SquaredHyperplaneTerm(Hyperplane<LocalVariable> hyperplane, int ruleIndex) {
+        super(hyperplane, ruleIndex);
 
         this.coefficients = hyperplane.getCoefficients();
         this.constant = hyperplane.getConstant();
@@ -60,14 +60,10 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
         lowerTriangle = null;
     }
 
-    private void initLowerTriangle(float stepSize) {
+    private void initLowerTriangle(float stepSize, TermStore termStore) {
         // Note that this method will only be called once (and not for every term),
         // so we will compute the hash here and not save it.
-        int hash = HashCode.build(((WeightedGroundRule)groundRule).getWeight());
-        hash = HashCode.build(hash, stepSize);
-        for (int i = 0; i < size; i++) {
-            hash = HashCode.build(hash, coefficients[i]);
-        }
+        int hash = getHash(stepSize, termStore);
 
         // First check the cache.
         // Each rule (not ground rule) will have its own lowerTriangle.
@@ -77,21 +73,30 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
         }
 
         // If we didn't find it, then synchronize and compute on this thread.
-        lowerTriangle = computeLowerTriangle(stepSize, hash);
+        lowerTriangle = computeLowerTriangle(stepSize, hash, termStore);
+    }
+
+    private int getHash(float stepSize, TermStore termStore) {
+        int hash = HashCode.build(((float)termStore.getWeight(ruleIndex)));
+        hash = HashCode.build(hash, stepSize);
+        for (int i = 0; i < size; i++) {
+            hash = HashCode.build(hash, coefficients[i]);
+        }
+        return hash;
     }
 
     /**
      * Actually copute the lower triangle and store it in the cache.
      * There is one triangle per rule, so most ground rules will just pull off the same cache.
      */
-    private synchronized FloatMatrix computeLowerTriangle(float stepSize, int hash) {
+    private synchronized FloatMatrix computeLowerTriangle(float stepSize, int hash, TermStore termStore) {
         // There is still a race condition in the map fetch before getting here,
         // so we will check one more time while synchronized.
         if (lowerTriangleCache.containsKey(hash)) {
             return lowerTriangleCache.get(hash);
         }
 
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+        float weight = (float)termStore.getWeight(ruleIndex);
         float coeff = 0.0f;
 
         FloatMatrix matrix = FloatMatrix.zeroes(size, size);
@@ -120,7 +125,7 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
      * coefficients^T * x - constant
      */
     @Override
-    public float evaluate() {
+    public float evaluate(TermStore termStore) {
         float value = 0.0f;
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * variables[i].getValue();
@@ -130,7 +135,7 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
     }
 
     @Override
-    public float evaluate(float[] consensusValues) {
+    public float evaluate(float[] consensusValues, TermStore termStore) {
         float value = 0.0f;
         for (int i = 0; i < size; i++) {
             value += coefficients[i] * consensusValues[variables[i].getGlobalId()];
@@ -145,8 +150,8 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
      * <p>
      * Stores the result in x.
      */
-    protected void minWeightedSquaredHyperplane(float stepSize, float[] consensusValues) {
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+    protected void minWeightedSquaredHyperplane(float stepSize, float[] consensusValues, TermStore termStore) {
+        float weight = (float)termStore.getWeight(ruleIndex);
 
         // Construct constant term in the gradient (moved to right-hand side).
         for (int i = 0; i < size; i++) {
@@ -190,7 +195,7 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
 
         // Fast system solve.
         if (lowerTriangle == null) {
-            initLowerTriangle(stepSize);
+            initLowerTriangle(stepSize, termStore);
         }
 
         for (int i = 0; i < size; i++) {
@@ -212,5 +217,42 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
 
             variables[i].setValue(newValue / lowerTriangle.get(i, i));
         }
+    }
+
+    @Override
+    public int fixedByteSize() {
+        int bitSize = super.fixedByteSize();
+        bitSize += Float.SIZE / 8; //constant
+        for (int i = 0; i < size; i++){
+            bitSize += Float.SIZE / 8; // unitNorm, point, coefficient
+        }
+
+        return bitSize;
+    }
+
+    @Override
+    public void writeFixedValues(ByteBuffer fixedBuffer){
+        super.writeFixedValues(fixedBuffer);
+        fixedBuffer.putFloat(constant);
+
+        for (int i = 0; i < size; i++) {
+            fixedBuffer.putFloat(coefficients[i]);
+        }
+    }
+
+    @Override
+    public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer){
+        super.read(fixedBuffer, volatileBuffer);
+        constant = fixedBuffer.getFloat();
+
+        // Make sure that there is enough room for all.
+        if (coefficients.length < size) {
+            coefficients = new float[size];
+        }
+
+        for (int i = 0; i < size; i++) {
+            coefficients[i] = fixedBuffer.getFloat();
+        }
+        lowerTriangle = null;
     }
 }

@@ -17,15 +17,10 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import static org.junit.Assert.assertEquals;
-
+import org.junit.Test;
 import org.linqs.psl.reasoner.term.Hyperplane;
 
-import org.junit.Before;
-import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
+import static org.junit.Assert.assertEquals;
 
 public class SquaredHingeLossTermTest {
     @Test
@@ -103,8 +98,8 @@ public class SquaredHingeLossTermTest {
             variables[i].setLagrange(y[i]);
         }
 
-        SquaredHingeLossTerm term = new SquaredHingeLossTerm(new FakeGroundRule(weight), new Hyperplane<LocalVariable>(variables, coeffs, constant, z.length));
-        term.minimize(stepSize, z);
+        SquaredHingeLossTerm term = new SquaredHingeLossTerm(new Hyperplane<LocalVariable>(variables, coeffs, constant, z.length), 0);
+        term.minimize(stepSize, z, new FakeTermStore(weight));
 
         for (int i = 0; i < z.length; i++) {
             assertEquals(expected[i], variables[i].getValue(), 5e-5);

@@ -15,11 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.sgd.term;
+package org.linqs.psl.reasoner.sgdadmmhybrid.term;
 
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.WeightedRule;
+import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
+import org.linqs.psl.reasoner.admm.term.LocalVariable;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.streaming.StreamingInitialRoundIterator;
 import org.linqs.psl.util.RuntimeStats;
@@ -34,11 +35,11 @@ import java.util.List;
  * On this first iteration, we will build the term cache up from ground rules
  * and flush the terms to disk.
  */
-public class SGDStreamingInitialRoundIterator extends StreamingInitialRoundIterator<SGDObjectiveTerm, RandomVariableAtom> {
-    public SGDStreamingInitialRoundIterator(
-            SGDStreamingTermStore parentStore, List<WeightedRule> rules,
-            AtomManager atomManager, HyperplaneTermGenerator<SGDObjectiveTerm, RandomVariableAtom> termGenerator,
-            List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
+public class ADMMStreamingInitialRoundIterator extends StreamingInitialRoundIterator<ADMMObjectiveTerm, LocalVariable> {
+    public ADMMStreamingInitialRoundIterator(
+            ADMMStreamingTermStore parentStore, List<WeightedRule> rules,
+            AtomManager atomManager, HyperplaneTermGenerator<ADMMObjectiveTerm, LocalVariable> termGenerator,
+            List<ADMMObjectiveTerm> termCache, List<ADMMObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             int pageSize) {
         super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize);
@@ -59,7 +60,7 @@ public class SGDStreamingInitialRoundIterator extends StreamingInitialRoundItera
     private void flushTermCache(String termPagePath) {
         // Count the exact size we will need to write.
         int termsSize = 0;
-        for (SGDObjectiveTerm term : termCache) {
+        for (ADMMObjectiveTerm term : termCache) {
             termsSize += term.fixedByteSize();
         }
 
@@ -76,7 +77,7 @@ public class SGDStreamingInitialRoundIterator extends StreamingInitialRoundItera
         termBuffer.putInt(termCache.size());
 
         // Now put in all the terms.
-        for (SGDObjectiveTerm term : termCache) {
+        for (ADMMObjectiveTerm term : termCache) {
             term.writeFixedValues(termBuffer);
         }
 

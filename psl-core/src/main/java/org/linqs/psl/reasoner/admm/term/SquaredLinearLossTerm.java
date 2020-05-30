@@ -20,33 +20,34 @@ package org.linqs.psl.reasoner.admm.term;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.TermStore;
 
 /**
  * ADMMReasoner objective term of the form <br />
  * weight * (coeffs^T * x - constant)^2
  */
 public class SquaredLinearLossTerm extends SquaredHyperplaneTerm {
-    public SquaredLinearLossTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
-        super(groundRule, hyperplane);
+    public SquaredLinearLossTerm(Hyperplane<LocalVariable> hyperplane, int ruleIndex) {
+        super(hyperplane, ruleIndex);
     }
 
     @Override
-    public void minimize(float stepSize, float[] consensusValues) {
-        minWeightedSquaredHyperplane(stepSize, consensusValues);
+    public void minimize(float stepSize, float[] consensusValues, TermStore termStore) {
+        minWeightedSquaredHyperplane(stepSize, consensusValues, termStore);
     }
 
     /**
      * weight * (coeffs^T * x - constant)^2
      */
     @Override
-    public float evaluate() {
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-        return weight * (float)Math.pow(super.evaluate(), 2);
+    public float evaluate(TermStore termStore) {
+        float weight = (float)termStore.getWeight(ruleIndex);
+        return weight * (float)Math.pow(super.evaluate(termStore), 2);
     }
 
     @Override
-    public float evaluate(float[] consensusValues) {
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
-        return weight * (float)Math.pow(super.evaluate(consensusValues), 2);
+    public float evaluate(float[] consensusValues, TermStore termStore) {
+        float weight = (float)termStore.getWeight(ruleIndex);
+        return weight * (float)Math.pow(super.evaluate(consensusValues, termStore), 2);
     }
 }

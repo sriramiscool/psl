@@ -18,17 +18,11 @@
 package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.database.atom.AtomManager;
-import org.linqs.psl.model.atom.Atom;
-import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
-import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
+import org.linqs.psl.reasoner.term.streaming.RVAStreamingTermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
-import org.linqs.psl.reasoner.term.streaming.StreamingTermStore;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * A term store that iterates over ground queries directly (obviating the GroundRuleStore).
@@ -36,7 +30,7 @@ import java.util.Set;
  * Remember that this class will internally iterate over an unknown number of groundings.
  * So interrupting the iteration can cause the term count to be incorrect.
  */
-public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> {
+public class SGDStreamingTermStore extends RVAStreamingTermStore<SGDObjectiveTerm> {
     public SGDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
         super(rules, atomManager, new SGDTermGenerator());
     }
@@ -44,7 +38,7 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
     @Override
     protected boolean supportsRule(Rule rule) {
         // No special requirements for rules.
-        return true;
+        return rule.isWeighted();
     }
 
     @Override
@@ -67,4 +61,5 @@ public class SGDStreamingTermStore extends StreamingTermStore<SGDObjectiveTerm> 
                 this, true, termCache, termPool,
                 termBuffer, volatileBuffer, shufflePage, shuffleMap, randomizePageAccess, numPages);
     }
+
 }

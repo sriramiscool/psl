@@ -17,16 +17,11 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import static org.junit.Assert.assertEquals;
-
+import org.junit.Test;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
 
-import org.junit.Before;
-import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
+import static org.junit.Assert.assertEquals;
 
 public class LinearConstraintTermTest {
     @Test
@@ -71,8 +66,8 @@ public class LinearConstraintTermTest {
             variables[i].setLagrange(y[i]);
         }
 
-        LinearConstraintTerm term = new LinearConstraintTerm(null, new Hyperplane<LocalVariable>(variables, coeffs, constant, z.length), comparator);
-        term.minimize(stepSize, z);
+        LinearConstraintTerm term = new LinearConstraintTerm(new Hyperplane<LocalVariable>(variables, coeffs, constant, z.length), comparator, 0);
+        term.minimize(stepSize, z, null);
 
         for (int i = 0; i < z.length; i++) {
             assertEquals(expected[i], variables[i].getValue(), 5e-5);

@@ -17,10 +17,12 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
+
+import java.nio.ByteBuffer;
 
 /**
  * ADMMReasoner objective term of the form:
@@ -31,33 +33,33 @@ import org.linqs.psl.util.MathUtils;
  * All coefficients must be non-zero.
  */
 public class LinearConstraintTerm extends HyperplaneTerm {
-    private final FunctionComparator comparator;
+    private FunctionComparator comparator;
 
-    protected LinearConstraintTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane, FunctionComparator comparator) {
-        super(groundRule, hyperplane);
+    protected LinearConstraintTerm(Hyperplane<LocalVariable> hyperplane, FunctionComparator comparator, int ruleIndex) {
+        super(hyperplane, ruleIndex);
         this.comparator = comparator;
     }
 
     @Override
-    public float evaluate() {
-        return evaluateInternal(null);
+    public float evaluate(TermStore termStore) {
+        return evaluateInternal(null, termStore);
     }
 
     @Override
-    public float evaluate(float[] consensusValues) {
-        return evaluateInternal(consensusValues);
+    public float evaluate(float[] consensusValues, TermStore termStore) {
+        return evaluateInternal(consensusValues, termStore);
     }
 
     /**
      * if (coefficients^T * x [comparator] constant) { return 0.0 }
      * else { return infinity }
      */
-    private float evaluateInternal(float[] consensusValues) {
+    private float evaluateInternal(float[] consensusValues, TermStore termStore) {
         float value = 0.0f;
         if (consensusValues == null) {
-            value = super.evaluate();
+            value = super.evaluate(termStore);
         } else {
-            value = super.evaluate(consensusValues);
+            value = super.evaluate(consensusValues, termStore);
         }
 
         if (comparator.equals(FunctionComparator.EQ)) {
@@ -81,7 +83,7 @@ public class LinearConstraintTerm extends HyperplaneTerm {
     }
 
     @Override
-    public void minimize(float stepSize, float[] consensusValues) {
+    public void minimize(float stepSize, float[] consensusValues, TermStore termStore) {
         // If it's not an equality constraint, first tries to minimize without the constraint.
         if (!comparator.equals(FunctionComparator.EQ)) {
 
@@ -110,5 +112,24 @@ public class LinearConstraintTerm extends HyperplaneTerm {
         // If the naive minimization didn't work, or if it's an equality constraint,
         // projects onto the hyperplane
         project(stepSize, consensusValues);
+    }
+
+    @Override
+    public int fixedByteSize() {
+        int bitSize = super.fixedByteSize();
+        bitSize += Integer.SIZE / 8; //constant
+        return bitSize;
+    }
+
+    @Override
+    public void writeFixedValues(ByteBuffer fixedBuffer){
+        super.writeFixedValues(fixedBuffer);
+        fixedBuffer.putInt(comparator.ordinal());
+    }
+
+    @Override
+    public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer){
+        super.read(fixedBuffer, volatileBuffer);
+        comparator = FunctionComparator.values()[fixedBuffer.getInt()];
     }
 }

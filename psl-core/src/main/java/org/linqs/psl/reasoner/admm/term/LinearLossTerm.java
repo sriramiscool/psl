@@ -17,29 +17,30 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.model.rule.GroundRule;
-import org.linqs.psl.model.rule.WeightedGroundRule;
 import org.linqs.psl.reasoner.term.Hyperplane;
+import org.linqs.psl.reasoner.term.TermStore;
+
+import java.nio.ByteBuffer;
 
 /**
  * ADMMReasoner objective term of the form <br />
  * weight * coefficients^T * x
  */
 public class LinearLossTerm extends ADMMObjectiveTerm {
-    private final float[] coefficients;
+    private float[] coefficients;
 
     /**
      * Caller releases control of |variables| and |coefficients|.
      */
-    LinearLossTerm(GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
-        super(hyperplane, groundRule);
+    LinearLossTerm(Hyperplane<LocalVariable> hyperplane, int ruleIndex) {
+        super(hyperplane, ruleIndex);
 
         this.coefficients = hyperplane.getCoefficients();
     }
 
     @Override
-    public void minimize(float stepSize, float[] consensusValues) {
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+    public void minimize(float stepSize, float[] consensusValues, TermStore termStore) {
+        float weight = (float)termStore.getWeight(ruleIndex);
         for (int i = 0; i < size; i++) {
             LocalVariable variable = variables[i];
 
@@ -54,8 +55,8 @@ public class LinearLossTerm extends ADMMObjectiveTerm {
      * weight * coefficients^T * x
      */
     @Override
-    public float evaluate() {
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+    public float evaluate(TermStore termStore) {
+        float weight = (float)termStore.getWeight(ruleIndex);
         float value = 0.0f;
 
         for (int i = 0; i < size; i++) {
@@ -66,8 +67,8 @@ public class LinearLossTerm extends ADMMObjectiveTerm {
     }
 
     @Override
-    public float evaluate(float[] consensusValues) {
-        float weight = (float)((WeightedGroundRule)groundRule).getWeight();
+    public float evaluate(float[] consensusValues, TermStore termStore) {
+        float weight = (float)termStore.getWeight(ruleIndex);
         float value = 0.0f;
 
         for (int i = 0; i < size; i++) {
@@ -75,5 +76,39 @@ public class LinearLossTerm extends ADMMObjectiveTerm {
         }
 
         return weight * value;
+    }
+
+    @Override
+    public int fixedByteSize() {
+        int bitSize = super.fixedByteSize();
+        bitSize += Float.SIZE / 8; //constant
+        for (int i = 0; i < size; i++){
+            bitSize += Float.SIZE / 8; // coefficient
+        }
+
+        return bitSize;
+    }
+
+    @Override
+    public void writeFixedValues(ByteBuffer fixedBuffer){
+        super.writeFixedValues(fixedBuffer);
+
+        for (int i = 0; i < size; i++) {
+            fixedBuffer.putFloat(coefficients[i]);
+        }
+    }
+
+    @Override
+    public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer){
+        super.read(fixedBuffer, volatileBuffer);
+
+        // Make sure that there is enough room for all.
+        if (coefficients.length < size) {
+            coefficients = new float[size];
+        }
+
+        for (int i = 0; i < size; i++) {
+            coefficients[i] = fixedBuffer.getFloat();
+        }
     }
 }

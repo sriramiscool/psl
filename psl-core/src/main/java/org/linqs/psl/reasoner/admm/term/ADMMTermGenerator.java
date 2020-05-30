@@ -17,7 +17,6 @@
  */
 package org.linqs.psl.reasoner.admm.term;
 
-import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.reasoner.function.FunctionComparator;
 import org.linqs.psl.reasoner.term.Hyperplane;
@@ -40,21 +39,22 @@ public class ADMMTermGenerator extends HyperplaneTermGenerator<ADMMObjectiveTerm
     @Override
     public ADMMObjectiveTerm createLossTerm(TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
             boolean isHinge, boolean isSquared, GroundRule groundRule, Hyperplane<LocalVariable> hyperplane) {
+        int ruleInd = termStore.getRuleInd(groundRule.getRule());
         if (isHinge && isSquared) {
-            return new SquaredHingeLossTerm(groundRule, hyperplane);
+            return new SquaredHingeLossTerm(hyperplane, ruleInd);
         } else if (isHinge && !isSquared) {
-            return new HingeLossTerm(groundRule, hyperplane);
+            return new HingeLossTerm(hyperplane, ruleInd);
         } else if (!isHinge && isSquared) {
             hyperplane.setConstant(0.0f);
-            return new SquaredLinearLossTerm(groundRule, hyperplane);
+            return new SquaredLinearLossTerm(hyperplane, ruleInd);
         } else {
-            return new LinearLossTerm(groundRule, hyperplane);
+            return new LinearLossTerm(hyperplane, ruleInd);
         }
     }
 
     @Override
     public ADMMObjectiveTerm createLinearConstraintTerm(TermStore<ADMMObjectiveTerm, LocalVariable> termStore,
             GroundRule groundRule, Hyperplane<LocalVariable> hyperplane, FunctionComparator comparator) {
-        return new LinearConstraintTerm(groundRule, hyperplane, comparator);
+        return new LinearConstraintTerm(hyperplane, comparator, termStore.getRuleInd(groundRule.getRule()));
     }
 }

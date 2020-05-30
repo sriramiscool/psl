@@ -20,11 +20,11 @@ package org.linqs.psl.reasoner.term.streaming;
 import org.linqs.psl.database.QueryResultIterable;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.database.rdbms.RDBMSDatabase;
-import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.model.term.Constant;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
+import org.linqs.psl.reasoner.term.ReasonerLocalVariable;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 
 import java.nio.ByteBuffer;
@@ -37,12 +37,12 @@ import java.util.List;
  * On this first iteration, we will build the term cache up from ground rules
  * and flush the terms to disk.
  */
-public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> implements StreamingIterator<T> {
+public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm, V extends ReasonerLocalVariable> implements StreamingIterator<T> {
     // How much to over-allocate by.
     public static final double OVERALLOCATION_RATIO = 1.25;
 
-    protected StreamingTermStore<T> parentStore;
-    protected HyperplaneTermGenerator<T, RandomVariableAtom> termGenerator;
+    protected BasicStreamingTermStore<T, V> parentStore;
+    protected HyperplaneTermGenerator<T, V> termGenerator;
     protected AtomManager atomManager;
 
     protected List<WeightedRule> rules;
@@ -72,8 +72,8 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm> impl
     protected int numPages;
 
     public StreamingInitialRoundIterator(
-            StreamingTermStore<T> parentStore, List<WeightedRule> rules,
-            AtomManager atomManager, HyperplaneTermGenerator<T, RandomVariableAtom> termGenerator,
+            BasicStreamingTermStore<T, V> parentStore, List<WeightedRule> rules,
+            AtomManager atomManager, HyperplaneTermGenerator<T, V> termGenerator,
             List<T> termCache, List<T> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             int pageSize) {

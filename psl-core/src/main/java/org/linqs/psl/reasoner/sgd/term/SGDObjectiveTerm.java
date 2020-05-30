@@ -23,7 +23,6 @@ import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.VariableTermStore;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  * A term in the objective to be optimized by a SGDReasoner.
@@ -95,9 +94,9 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
             float gradient = computeGradient(i, dot);
             float gradientStep = gradient * (learningRate / iteration);
 
-            float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[i] - gradientStep));
-            movement += Math.abs(newValue - variableValues[i]);
-            variableValues[i] = newValue;
+            float newValue = Math.max(0.0f, Math.min(1.0f, variableValues[variableIndexes[i]] - gradientStep));
+            movement += Math.abs(newValue - variableValues[variableIndexes[i]]);
+            variableValues[variableIndexes[i]] = newValue;
         }
 
         return movement;

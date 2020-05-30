@@ -19,10 +19,11 @@ package org.linqs.psl.reasoner.term;
 
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.GroundRule;
+import org.linqs.psl.model.rule.Rule;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * A TermStore specifically for a consensus optimizer.
@@ -98,6 +99,21 @@ public abstract class MemoryConsensusTermStore<T extends ReasonerTerm, V extends
     @Override
     public void add(GroundRule rule, T term) {
         store.add(rule, term);
+    }
+
+    @Override
+    public double getWeight(int index){
+        return store.getWeight(index);
+    }
+
+    @Override
+    public int getRuleInd(Rule rule) {
+        return store.getRuleInd(rule);
+    }
+
+    @Override
+    public void addRule(Rule rule) {
+        store.addRule(rule);
     }
 
     @Override
