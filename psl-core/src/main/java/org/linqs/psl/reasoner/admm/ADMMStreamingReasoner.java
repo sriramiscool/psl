@@ -285,11 +285,10 @@ public class ADMMStreamingReasoner extends Reasoner {
     private ObjectiveResult computeObjective(ADMMStreamingTermStore termStore, boolean logViolatedConstraints) {
         float objective = 0.0f;
         int violatedConstraints = 0;
-        float[] consensusValues = termStore.getVariableValues();
 
         for (ADMMObjectiveTerm term : termStore) {
             if (term instanceof LinearConstraintTerm) {
-                if (term.evaluate(consensusValues, termStore) > 0.0f) {
+                if (term.evaluate(termStore.getVariableValues(), termStore) > 0.0f) {
                     violatedConstraints++;
 
 //                    if (logViolatedConstraints) {
@@ -297,7 +296,7 @@ public class ADMMStreamingReasoner extends Reasoner {
 //                    }
                 }
             } else {
-                objective += term.evaluate(consensusValues, termStore);
+                objective += term.evaluate(termStore.getVariableValues(), termStore);
             }
         }
 
@@ -321,7 +320,6 @@ public class ADMMStreamingReasoner extends Reasoner {
         private final ADMMStreamingTermStore termStore;
 //        private final int blockSize;
         private Iterator<ADMMObjectiveTerm> termIterator;
-        private final float[] consensusValues;
         private float[][] newConsensusVal;
         private int[][] newConsensusValCount;
 
@@ -332,7 +330,6 @@ public class ADMMStreamingReasoner extends Reasoner {
 
             this.termStore = termStore;
             this.termIterator = termIterator;
-            this.consensusValues = termStore.getVariableValues();
             this.newConsensusVal = ncv;
             this.newConsensusValCount = ncc;
         }
@@ -346,10 +343,10 @@ public class ADMMStreamingReasoner extends Reasoner {
             int numTerms = termStore.size();
 
             // Minimize each local function (wrt the local variable copies).
-            ADMMObjectiveTerm term = termIterator.next();
-            while (term != null){
-                term.updateLagrange(stepSize, consensusValues);
-                term.minimize(stepSize, consensusValues, termStore);
+            while (termIterator.hasNext()){
+                ADMMObjectiveTerm term = termIterator.next();
+                term.updateLagrange(stepSize, termStore.getVariableValues());
+                term.minimize(stepSize, termStore.getVariableValues(), termStore);
                 for (int i = 0; i < term.size(); i++) {
                     newConsensusValCount[blockIndex][term.getVariables()[i].getGlobalId()]++;
                     newConsensusVal[blockIndex][term.getVariables()[i].getGlobalId()] += term.getVariables()[i].getValue();

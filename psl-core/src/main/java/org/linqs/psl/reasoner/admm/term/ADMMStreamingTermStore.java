@@ -36,6 +36,7 @@ import java.util.List;
 public class ADMMStreamingTermStore extends BasicStreamingTermStore<ADMMObjectiveTerm, LocalVariable> {
     public ADMMStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
         super(rules, atomManager, new ADMMTermGenerator());
+        shufflePage = false;
     }
 
     @Override

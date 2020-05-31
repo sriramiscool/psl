@@ -70,6 +70,7 @@ public class ADMMStreamingCacheIterator extends StreamingCacheIterator<ADMMObjec
 
         // Convert all the terms from binary to objects.
         // Use the terms from the pool.
+        System.out.println("STARTING TO USE POOL");
 
         for (int i = 0; i < numTerms; i++) {
             int termType = termBuffer.getInt();
@@ -77,6 +78,7 @@ public class ADMMStreamingCacheIterator extends StreamingCacheIterator<ADMMObjec
             term.read(termBuffer, volatileBuffer);
             termCache.add(term);
         }
+        ((ADMMTermPool)termPool).resetIdx();
     }
 
     @Override
@@ -87,26 +89,13 @@ public class ADMMStreamingCacheIterator extends StreamingCacheIterator<ADMMObjec
             volatileSize += term.volatileByteSize();
         }
 
-        int volatileBufferSize = (Float.SIZE / 8) + volatileSize;
+        int headerSize = Float.SIZE / 8;
+        int volatileBufferSize = headerSize + volatileSize;
 
         volatileBuffer.putInt(volatileSize);
 
-        // If this page was picked up from the cache (and not from grounding) and shuffled,
-        // then we will need to use the shuffle map to write the volatile values back in
-        // the same order as the terms.
-        if (shufflePage) {
-            for (int shuffledIndex = 0; shuffledIndex < termCache.size(); shuffledIndex++) {
-                int writeIndex = shuffleMap[shuffledIndex];
-                ADMMObjectiveTerm term = termCache.get(shuffledIndex);
-                volatileBuffer.mark();
-                volatileBuffer.position(writeIndex * term.volatileByteSize());
-                term.writeVolatileValues(volatileBuffer);
-                volatileBuffer.reset();
-            }
-        } else {
-            for (ADMMObjectiveTerm term : termCache) {
-                term.writeVolatileValues(volatileBuffer);
-            }
+        for (ADMMObjectiveTerm term : termCache) {
+            term.writeVolatileValues(volatileBuffer);
         }
 
         try (FileOutputStream stream = new FileOutputStream(volatilePagePath)) {

@@ -29,18 +29,29 @@ public class ADMMTermPool implements TermPool<ADMMObjectiveTerm> {
 
     }
     private Map<Class, List<ADMMObjectiveTerm>> termPool;
+    private Map<Class, Integer> typeToIndex;
 
     public ADMMTermPool(int pageSize) {
         termPool = new HashMap<>();
+        typeToIndex = new HashMap<>();
         for (Class c: classToTermType.keySet()){
             termPool.put(c, new ArrayList<>(pageSize));
+            typeToIndex.put(c, 0);
         }
     }
 
 
     @Override
     public ADMMObjectiveTerm get(int i, Class type) {
-        return termPool.get(type).get(i);
+        ADMMObjectiveTerm admmObjectiveTerm = termPool.get(type).get(typeToIndex.get(type));
+        typeToIndex.put(type, typeToIndex.get(type)+1);
+        return admmObjectiveTerm;
+    }
+
+    public void resetIdx(){
+        for (Class c : typeToIndex.keySet()) {
+            typeToIndex.put(c, 0);
+        }
     }
 
     @Override
@@ -49,6 +60,9 @@ public class ADMMTermPool implements TermPool<ADMMObjectiveTerm> {
             for (Class c : termPool.keySet()) {
                 termPool.get(c).clear();
             }
+        }
+        if (typeToIndex != null){
+            resetIdx();
         }
     }
 
@@ -61,5 +75,6 @@ public class ADMMTermPool implements TermPool<ADMMObjectiveTerm> {
     public void close() {
         clear();
         termPool = null;
+        typeToIndex = null;
     }
 }
