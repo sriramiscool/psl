@@ -22,6 +22,7 @@ import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.WeightedRule;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
 import org.linqs.psl.reasoner.term.streaming.StreamingInitialRoundIterator;
+import org.linqs.psl.reasoner.term.streaming.TermPool;
 import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileOutputStream;
@@ -38,7 +39,7 @@ public class DCDStreamingInitialRoundIterator extends StreamingInitialRoundItera
     public DCDStreamingInitialRoundIterator(
             DCDStreamingTermStore parentStore, List<WeightedRule> rules,
             AtomManager atomManager, HyperplaneTermGenerator<DCDObjectiveTerm, RandomVariableAtom> termGenerator,
-            List<DCDObjectiveTerm> termCache, List<DCDObjectiveTerm> termPool,
+            List<DCDObjectiveTerm> termCache, TermPool<DCDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             int pageSize) {
         super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize);

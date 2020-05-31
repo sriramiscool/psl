@@ -15,14 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.sgdadmmhybrid.term;
+package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.rule.WeightedRule;
-import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
-import org.linqs.psl.reasoner.admm.term.LocalVariable;
 import org.linqs.psl.reasoner.term.HyperplaneTermGenerator;
+import org.linqs.psl.reasoner.term.streaming.ADMMTermPool;
 import org.linqs.psl.reasoner.term.streaming.StreamingInitialRoundIterator;
+import org.linqs.psl.reasoner.term.streaming.TermPool;
 import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileOutputStream;
@@ -39,7 +39,7 @@ public class ADMMStreamingInitialRoundIterator extends StreamingInitialRoundIter
     public ADMMStreamingInitialRoundIterator(
             ADMMStreamingTermStore parentStore, List<WeightedRule> rules,
             AtomManager atomManager, HyperplaneTermGenerator<ADMMObjectiveTerm, LocalVariable> termGenerator,
-            List<ADMMObjectiveTerm> termCache, List<ADMMObjectiveTerm> termPool,
+            List<ADMMObjectiveTerm> termCache, TermPool<ADMMObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             int pageSize) {
         super(parentStore, rules, atomManager, termGenerator, termCache, termPool, termBuffer, volatileBuffer, pageSize);
@@ -48,13 +48,9 @@ public class ADMMStreamingInitialRoundIterator extends StreamingInitialRoundIter
     @Override
     protected void writeFullPage(String termPagePath, String volatilePagePath) {
         flushTermCache(termPagePath);
+        flushVolatileCache(volatilePagePath);
 
         termCache.clear();
-
-        // SGD doesn't use a volatile buffer.
-        if (volatileBuffer == null) {
-            volatileBuffer = ByteBuffer.allocate(0);
-        }
     }
 
     private void flushTermCache(String termPagePath) {
@@ -62,6 +58,7 @@ public class ADMMStreamingInitialRoundIterator extends StreamingInitialRoundIter
         int termsSize = 0;
         for (ADMMObjectiveTerm term : termCache) {
             termsSize += term.fixedByteSize();
+            termsSize += Integer.SIZE / 8; // to store the type of ADMMObjectiveTerm
         }
 
         // Allocate an extra two ints for the number of terms and size of terms in that page.
@@ -78,6 +75,7 @@ public class ADMMStreamingInitialRoundIterator extends StreamingInitialRoundIter
 
         // Now put in all the terms.
         for (ADMMObjectiveTerm term : termCache) {
+            termBuffer.putInt(ADMMTermPool.classToTermType.get(term.getClass()));
             term.writeFixedValues(termBuffer);
         }
 
@@ -89,5 +87,36 @@ public class ADMMStreamingInitialRoundIterator extends StreamingInitialRoundIter
 
         // Log io.
         RuntimeStats.logDiskWrite(termBufferSize);
+    }
+
+    private void flushVolatileCache(String volatilePagePath) {
+        // Count the exact size we will need to write.
+        int volatileSize = 0;
+        for (ADMMObjectiveTerm term : termCache) {
+            volatileSize += term.volatileByteSize();
+        }
+
+        int volatileBufferSize = (Float.SIZE / 8) + volatileSize;
+
+        if (volatileBuffer == null || volatileBuffer.capacity() < volatileBufferSize) {
+            volatileBuffer = ByteBuffer.allocate((int)(volatileBufferSize * OVERALLOCATION_RATIO));
+        }
+        volatileBuffer.clear();
+
+        volatileBuffer.putInt(volatileSize);
+
+        // Put in all the volatile values.
+        for (ADMMObjectiveTerm term : termCache) {
+            term.writeVolatileValues(volatileBuffer);
+        }
+
+        try (FileOutputStream stream = new FileOutputStream(volatilePagePath)) {
+            stream.write(volatileBuffer.array(), 0, volatileBufferSize);
+        } catch (IOException ex) {
+            throw new RuntimeException("Unable to write volatile cache page: " + volatilePagePath, ex);
+        }
+
+        // Log io.
+        RuntimeStats.logDiskWrite(volatileBufferSize);
     }
 }

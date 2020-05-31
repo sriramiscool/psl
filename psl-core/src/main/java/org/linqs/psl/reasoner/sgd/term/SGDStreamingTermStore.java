@@ -20,7 +20,9 @@ package org.linqs.psl.reasoner.sgd.term;
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.term.streaming.RVAStreamingTermStore;
+import org.linqs.psl.reasoner.term.streaming.SGDTermPool;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
+import org.linqs.psl.reasoner.term.streaming.TermPool;
 
 import java.util.List;
 
@@ -33,6 +35,11 @@ import java.util.List;
 public class SGDStreamingTermStore extends RVAStreamingTermStore<SGDObjectiveTerm> {
     public SGDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
         super(rules, atomManager, new SGDTermGenerator());
+    }
+
+    @Override
+    protected TermPool<SGDObjectiveTerm> getTermPool(int pageSize) {
+        return new SGDTermPool(pageSize);
     }
 
     @Override

@@ -15,19 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.linqs.psl.reasoner.sgdadmmhybrid.term;
+package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.database.atom.AtomManager;
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.model.rule.Rule;
-import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
-import org.linqs.psl.reasoner.admm.term.ADMMTermGenerator;
-import org.linqs.psl.reasoner.admm.term.LocalVariable;
-import org.linqs.psl.reasoner.term.MemoryVariableTermStore;
+import org.linqs.psl.reasoner.term.streaming.ADMMTermPool;
 import org.linqs.psl.reasoner.term.streaming.BasicStreamingTermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
+import org.linqs.psl.reasoner.term.streaming.TermPool;
 
-import java.util.*;
+import java.util.List;
 
 /**
  * A term store that iterates over ground queries directly (obviating the GroundRuleStore).
@@ -38,12 +36,11 @@ import java.util.*;
 public class ADMMStreamingTermStore extends BasicStreamingTermStore<ADMMObjectiveTerm, LocalVariable> {
     public ADMMStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
         super(rules, atomManager, new ADMMTermGenerator());
-        this.store = new MemoryVariableTermStore<ADMMObjectiveTerm, RandomVariableAtom>() {
-            protected RandomVariableAtom convertAtomToVariable(RandomVariableAtom atom) {
-                return atom;
-            }
-        };
+    }
 
+    @Override
+    protected TermPool<ADMMObjectiveTerm> getTermPool(int pageSize) {
+        return new ADMMTermPool(pageSize);
     }
 
     protected boolean supportsRule(Rule rule) {

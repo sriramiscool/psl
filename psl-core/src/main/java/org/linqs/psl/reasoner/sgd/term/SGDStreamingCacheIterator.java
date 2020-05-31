@@ -19,6 +19,7 @@ package org.linqs.psl.reasoner.sgd.term;
 
 import org.linqs.psl.model.atom.RandomVariableAtom;
 import org.linqs.psl.reasoner.term.streaming.StreamingCacheIterator;
+import org.linqs.psl.reasoner.term.streaming.TermPool;
 import org.linqs.psl.util.RuntimeStats;
 
 import java.io.FileInputStream;
@@ -29,7 +30,7 @@ import java.util.List;
 public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjectiveTerm, RandomVariableAtom> {
     public SGDStreamingCacheIterator(
             SGDStreamingTermStore parentStore, boolean readonly,
-            List<SGDObjectiveTerm> termCache, List<SGDObjectiveTerm> termPool,
+            List<SGDObjectiveTerm> termCache, TermPool<SGDObjectiveTerm> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             boolean shufflePage, int[] shuffleMap, boolean randomizePageAccess,
             int numPages) {
@@ -63,7 +64,7 @@ public class SGDStreamingCacheIterator extends StreamingCacheIterator<SGDObjecti
         // Use the terms from the pool.
 
         for (int i = 0; i < numTerms; i++) {
-            SGDObjectiveTerm term = termPool.get(i);
+            SGDObjectiveTerm term = termPool.get(i, null);
             term.read(termBuffer, volatileBuffer);
             termCache.add(term);
         }

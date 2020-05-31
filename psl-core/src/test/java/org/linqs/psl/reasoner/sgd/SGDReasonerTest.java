@@ -30,7 +30,7 @@ import java.util.Set;
 
 public class SGDReasonerTest {
     /**
-     * A quick test that only checks to see if SGDADMMHybridReasoner runs.
+     * A quick test that only checks to see if ADMMStreamingReasoner runs.
      * This is not a targeted or exhaustive test, just a starting point.
      */
     @Test

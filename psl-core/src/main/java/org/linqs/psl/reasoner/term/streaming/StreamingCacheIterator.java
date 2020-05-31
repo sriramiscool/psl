@@ -39,7 +39,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm, V extends R
     protected boolean readonly;
 
     protected List<T> termCache;
-    protected List<T> termPool;
+    protected TermPool<T> termPool;
 
     protected ByteBuffer termBuffer;
     protected ByteBuffer volatileBuffer;
@@ -62,7 +62,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm, V extends R
 
     public StreamingCacheIterator(
             BasicStreamingTermStore<T, V> parentStore, boolean readonly,
-            List<T> termCache, List<T> termPool,
+            List<T> termCache, TermPool<T> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             boolean shufflePage, int[] shuffleMap, boolean randomizePageAccess,
             int numPages) {
@@ -106,7 +106,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm, V extends R
      * It is critical that every call to hasNext be followed by a call to next
      * (as long as hasNext returns true).
      */
-    public boolean hasNext() {
+    public synchronized boolean hasNext() {
         if (nextTerm != null) {
             throw new IllegalStateException("hasNext() was called twice in a row. Call next() directly after hasNext() == true.");
         }
@@ -125,7 +125,7 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm, V extends R
     }
 
     @Override
-    public T next() {
+    public synchronized T next() {
         if (nextTerm == null) {
             throw new IllegalStateException("Called next() when hasNext() == false (or before the first hasNext() call).");
         }

@@ -53,7 +53,7 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm, V ex
     protected List<GroundRule> pendingGroundRules;
 
     protected List<T> termCache;
-    protected List<T> termPool;
+    protected TermPool<T> termPool;
 
     protected ByteBuffer termBuffer;
     protected ByteBuffer volatileBuffer;
@@ -74,7 +74,7 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm, V ex
     public StreamingInitialRoundIterator(
             BasicStreamingTermStore<T, V> parentStore, List<WeightedRule> rules,
             AtomManager atomManager, HyperplaneTermGenerator<T, V> termGenerator,
-            List<T> termCache, List<T> termPool,
+            List<T> termCache, TermPool<T> termPool,
             ByteBuffer termBuffer, ByteBuffer volatileBuffer,
             int pageSize) {
         this.parentStore = parentStore;
@@ -114,7 +114,7 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm, V ex
      * It is critical that every call to hasNext be followed by a call to next
      * (as long as hasNext returns true).
      */
-    public boolean hasNext() {
+    public synchronized boolean hasNext() {
         if (nextTerm != null) {
             throw new IllegalStateException("hasNext() was called twice in a row. Call next() directly after hasNext() == true.");
         }
@@ -133,7 +133,7 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm, V ex
     }
 
     @Override
-    public T next() {
+    public synchronized T next() {
         if (nextTerm == null) {
             throw new IllegalStateException("Called next() when hasNext() == false (or before the first hasNext() call).");
         }

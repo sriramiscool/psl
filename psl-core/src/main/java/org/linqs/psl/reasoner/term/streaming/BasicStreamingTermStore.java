@@ -93,7 +93,7 @@ public abstract class BasicStreamingTermStore<T extends ReasonerTerm, V extends 
      * This should be a fill page's worth.
      * After the initial round, terms will bounce between here and the term cache.
      */
-    protected List<T> termPool;
+    protected TermPool<T> termPool;
 
     /**
      * When we shuffle pages, we need to know how they were shuffled so the volatile
@@ -111,6 +111,12 @@ public abstract class BasicStreamingTermStore<T extends ReasonerTerm, V extends 
         warnRules = Options.STREAMING_TS_WARN_RULES.getBoolean();
         ruleToIndex = new HashMap<>();
 
+
+        this.store = new MemoryVariableTermStore<ADMMObjectiveTerm, RandomVariableAtom>() {
+            protected RandomVariableAtom convertAtomToVariable(RandomVariableAtom atom) {
+                return atom;
+            }
+        };
         this.rules = new ArrayList<WeightedRule>();
         int ruleNum = 0;
         for (Rule rule : rules) {
@@ -166,11 +172,14 @@ public abstract class BasicStreamingTermStore<T extends ReasonerTerm, V extends 
         }
 
         termCache = new ArrayList<T>(pageSize);
-        termPool = new ArrayList<T>(pageSize);
+        termPool = getTermPool(pageSize);
         shuffleMap = new int[pageSize];
 
         (new File(pageDir)).mkdirs();
+
     }
+
+    protected abstract TermPool<T> getTermPool(int pageSize);
 
     public boolean isLoaded() {
         return !initialRound;
@@ -354,7 +363,10 @@ public abstract class BasicStreamingTermStore<T extends ReasonerTerm, V extends 
 
     @Override
     public void addRule(Rule rule) {
-        throw new UnsupportedOperationException();
+        if (ruleToIndex.containsKey(rule)) {
+            return;
+        }
+        throw new UnsupportedOperationException("Cannot add new rule. Something is wrong.");
     }
 
 

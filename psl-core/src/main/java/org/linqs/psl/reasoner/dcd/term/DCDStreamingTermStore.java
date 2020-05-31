@@ -23,8 +23,10 @@ import org.linqs.psl.model.rule.arithmetic.expression.ArithmeticRuleExpression;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.model.rule.arithmetic.WeightedArithmeticRule;
 import org.linqs.psl.model.rule.logical.WeightedLogicalRule;
+import org.linqs.psl.reasoner.term.streaming.DCDTermPool;
 import org.linqs.psl.reasoner.term.streaming.RVAStreamingTermStore;
 import org.linqs.psl.reasoner.term.streaming.StreamingIterator;
+import org.linqs.psl.reasoner.term.streaming.TermPool;
 
 import java.util.HashSet;
 import java.util.List;
@@ -39,6 +41,11 @@ import java.util.Set;
 public class DCDStreamingTermStore extends RVAStreamingTermStore<DCDObjectiveTerm> {
     public DCDStreamingTermStore(List<Rule> rules, AtomManager atomManager) {
         super(rules, atomManager, new DCDTermGenerator());
+    }
+
+    @Override
+    protected TermPool<DCDObjectiveTerm> getTermPool(int pageSize) {
+        return new DCDTermPool(pageSize);
     }
 
     @Override
