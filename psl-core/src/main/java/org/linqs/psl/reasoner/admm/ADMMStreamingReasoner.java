@@ -110,8 +110,6 @@ public class ADMMStreamingReasoner extends Reasoner {
         ADMMStreamingTermStore termStore = (ADMMStreamingTermStore)baseTermStore;
 
         termStore.initForOptimization();
-        //Create once
-        varCount = new int[termStore.getNumVariables()];
 
 //        int numTerms = termStore.size();
 //        int numVariables = termStore.getNumVariables();
@@ -136,6 +134,8 @@ public class ADMMStreamingReasoner extends Reasoner {
                     "Iteration {} -- Objective: {}, Feasible: {}.",
                     0, objective.objective, (objective.violatedConstraints == 0));
         }
+        //Create once
+        varCount = new int[termStore.getNumVariables()];
         computeConsensus = new float[NUM_THREADS][termStore.getNumVariables()];
         computeConsensusCount = new int[NUM_THREADS][termStore.getNumVariables()];
 
@@ -200,8 +200,9 @@ public class ADMMStreamingReasoner extends Reasoner {
 //                                primalRes, dualRes, epsilonPrimal, epsilonDual);
 
                         log.trace(
-                                "Iteration {} -- Objective: {}, Feasible: {}, Time: {}.",
-                                iteration, objective.objective, (objective.violatedConstraints == 0), (end-start));
+                                "Iteration {} -- Objective: {}, Old objective: {}, Feasible: {}, Time: {}.",
+                                iteration, objective.objective, (oldObjective==null? "NAN":oldObjective.objective),
+                                (objective.violatedConstraints == 0), (end-start));
                     }
 
                 }
@@ -239,7 +240,7 @@ public class ADMMStreamingReasoner extends Reasoner {
 
     private void updateConsensusVariables(ADMMStreamingTermStore termStore) {
         float[] variableValues = termStore.getVariableValues();
-        for (int i = 0; i < variableValues.length; i++) {
+        for (int i = 0; i < termStore.getNumVariables(); i++) {
             variableValues[i] = 0;
             varCount[i] = 0;
             for (int j = 0; j < NUM_THREADS; j++) {

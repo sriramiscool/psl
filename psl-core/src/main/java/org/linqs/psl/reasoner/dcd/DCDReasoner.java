@@ -59,15 +59,12 @@ public class DCDReasoner extends Reasoner {
 
         termStore.initForOptimization();
 
-        // This must be called after the term store has to correct variable capacity.
-        // A reallocation can cause this array to become out-of-date.
-        float[] variableValues = termStore.getVariableValues();
 
         float objective = -1.0f;
         float oldObjective = Float.POSITIVE_INFINITY;
 
         if (printInitialObj && log.isTraceEnabled()) {
-            objective = computeObjective(termStore, variableValues);
+            objective = computeObjective(termStore, termStore.getVariableValues());
             log.trace("Iteration {} -- Objective: {}, Iteration Time: {}, Total Optimiztion Time: {}", 0, objective, 0, 0);
         }
 
@@ -77,7 +74,7 @@ public class DCDReasoner extends Reasoner {
             long start = System.currentTimeMillis();
 
             for (DCDObjectiveTerm term : termStore) {
-                term.minimize(truncateEveryStep, variableValues);
+                term.minimize(truncateEveryStep, termStore.getVariableValues());
             }
 
             // If we are truncating every step, then the variables are already in valid state.
@@ -90,7 +87,7 @@ public class DCDReasoner extends Reasoner {
             long end = System.currentTimeMillis();
 
             oldObjective = objective;
-            objective = computeObjective(termStore, variableValues);
+            objective = computeObjective(termStore, termStore.getVariableValues());
             totalTime += end - start;
 
             if (log.isTraceEnabled()) {
