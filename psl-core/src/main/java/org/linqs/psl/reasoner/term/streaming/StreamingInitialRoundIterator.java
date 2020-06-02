@@ -183,9 +183,13 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm, V ex
         termCache.add(term);
 
         // If we are on the first page, set aside the term for reuse.
-        if (numPages == 0) {
-            termPool.add(term);
-        }
+//        if (numPages == 0) {
+//            termPool.add(term);
+//        }
+        // Add term to pool. Pool will handle and ensure it restricts to page size.
+        // If we added terms only for first page, ADMM has different types of terms and we might not
+        // create necessary terms for future.
+        termPool.add(term);
 
         return term;
     }
@@ -238,6 +242,8 @@ public abstract class StreamingInitialRoundIterator<T extends ReasonerTerm, V ex
 
         // Move on to the next page.
         numPages++;
+        // Reset termPool in case different types of terms show up.
+        termPool.resetForReuse();
     }
 
     @Override

@@ -7,10 +7,11 @@ import java.util.*;
 /**
  * Created by sriramsrinivasan on 5/30/20.
  */
-public class ADMMTermPool implements TermPool<ADMMObjectiveTerm> {
+public class ADMMTermPool extends AbstractTermPool<ADMMObjectiveTerm> {
 
     public static final Map<Integer, Class> termTypeToClass;
     public static final Map<Class, Integer> classToTermType;
+    private static final Class[] possibleClasses;
     static {
         Map<Integer, Class> termTypeToClassTemp = new HashMap<>();
         Map<Class, Integer> classToTermTypeTemp = new HashMap<>();
@@ -26,61 +27,13 @@ public class ADMMTermPool implements TermPool<ADMMObjectiveTerm> {
         classToTermTypeTemp.put(LinearConstraintTerm.class, 4);
         termTypeToClass = Collections.unmodifiableMap(termTypeToClassTemp);
         classToTermType = Collections.unmodifiableMap(classToTermTypeTemp);
+        possibleClasses = new Class[]{SquaredHingeLossTerm.class, SquaredLinearLossTerm.class,
+                HingeLossTerm.class, LinearLossTerm.class, LinearConstraintTerm.class};
 
     }
-//    private final Map<Class, List<ADMMObjectiveTerm>> termPool;
-//    private final Map<Class, Integer> typeToIndex;
-    private List<SquaredHingeLossTerm> temp;
-
     public ADMMTermPool(int pageSize) {
-//        termPool = new HashMap<>();
-//        typeToIndex = new HashMap<>();
-//        for (Class c: classToTermType.keySet()){
-//            termPool.put(c, new ArrayList<>(pageSize));
-//            typeToIndex.put(c, 0);
-//        }
-        temp = new ArrayList<>(pageSize);
-
+        super(pageSize, possibleClasses);
     }
 
 
-    @Override
-    public ADMMObjectiveTerm get(int i, Class type) {
-        ADMMObjectiveTerm admmObjectiveTerm = temp.get(i);//termPool.get(type).get(typeToIndex.get(type));
-//        typeToIndex.put(type, typeToIndex.get(type)+1);
-        return admmObjectiveTerm;
-    }
-
-    public void resetIdx(){
-//        for (Class c : typeToIndex.keySet()) {
-//            typeToIndex.put(c, 0);
-//        }
-    }
-
-    @Override
-    public void clear() {
-//        if (termPool != null) {
-//            for (Class c : termPool.keySet()) {
-//                termPool.get(c).clear();
-//            }
-//        }
-//        if (typeToIndex != null){
-//            resetIdx();
-//        }
-        temp.clear();
-    }
-
-    @Override
-    public void add(ADMMObjectiveTerm term) {
-//        termPool.get(term.getClass()).add(term);
-        temp.add((SquaredHingeLossTerm) term);
-    }
-
-    @Override
-    public void close() {
-        clear();
-        temp = null;
-//        termPool = null;
-//        typeToIndex = null;
-    }
 }

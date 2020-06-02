@@ -71,13 +71,13 @@ public class ADMMStreamingCacheIterator extends StreamingCacheIterator<ADMMObjec
         // Convert all the terms from binary to objects.
         // Use the terms from the pool.
 
+        termPool.resetForReuse();
         for (int i = 0; i < numTerms; i++) {
             int termType = termBuffer.getInt();
-            ADMMObjectiveTerm term = termPool.get(i, ADMMTermPool.termTypeToClass.get(termType));
+            ADMMObjectiveTerm term = termPool.get(ADMMTermPool.termTypeToClass.get(termType));
             term.read(termBuffer, volatileBuffer);
             termCache.add(term);
         }
-        ((ADMMTermPool)termPool).resetIdx();
     }
 
     @Override

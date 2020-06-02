@@ -70,8 +70,9 @@ public class DCDStreamingCacheIterator extends StreamingCacheIterator<DCDObjecti
         // Convert all the terms from binary to objects.
         // Use the terms from the pool.
 
+        termPool.resetForReuse();
         for (int i = 0; i < numTerms; i++) {
-            DCDObjectiveTerm term = termPool.get(i, null);
+            DCDObjectiveTerm term = termPool.get(DCDObjectiveTerm.class);
             term.read(termBuffer, volatileBuffer);
             termCache.add(term);
         }
