@@ -145,4 +145,10 @@ public class LinearConstraintTerm extends HyperplaneTerm {
         LinearConstraintTerm oth = (LinearConstraintTerm) o;
         return comparator.equals(oth.comparator);
     }
+
+    @Override
+    public String toString(){
+        String out = super.toString() + ", Comparator: " + comparator;
+        return out;
+    }
 }

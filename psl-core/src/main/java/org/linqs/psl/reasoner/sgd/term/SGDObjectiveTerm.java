@@ -60,6 +60,21 @@ public class SGDObjectiveTerm implements ReasonerTerm  {
         }
     }
 
+    public SGDObjectiveTerm (int size, float[] coefficients, float constant, int[] variableIndexes,
+                             boolean squared, boolean hinge, double weight, float learningRate){
+        this.squared = squared;
+        this.hinge = hinge;
+
+        this.weight = (float)weight;
+        this.learningRate = learningRate;
+
+        this.size = (short)size;
+        this.coefficients = coefficients;
+        this.constant = constant;
+
+        this.variableIndexes = variableIndexes;
+    }
+
     @Override
     public int size() {
         return size;

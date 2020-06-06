@@ -136,6 +136,13 @@ public abstract class StreamingCacheIterator<T extends ReasonerTerm, V extends R
         return term;
     }
 
+    public synchronized T getNext() {
+        if (this.hasNext()){
+            return this.next();
+        }
+        return null;
+     }
+
     @Override
     public void remove() {
         throw new UnsupportedOperationException();

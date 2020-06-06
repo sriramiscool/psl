@@ -19,10 +19,8 @@ package org.linqs.psl.reasoner.admm;
 
 import org.linqs.psl.config.Options;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.admm.term.ADMMObjectiveTerm;
-import org.linqs.psl.reasoner.admm.term.ADMMTermStore;
-import org.linqs.psl.reasoner.admm.term.LinearConstraintTerm;
-import org.linqs.psl.reasoner.admm.term.LocalVariable;
+import org.linqs.psl.reasoner.admm.term.*;
+import org.linqs.psl.reasoner.sgd.term.SGDObjectiveTerm;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.MathUtils;
 import org.linqs.psl.util.Parallel;
@@ -131,20 +129,41 @@ public class ADMMReasoner extends Reasoner {
 
         int iteration = 1;
         while (true) {
-            // Zero out the iteration variables.
-            primalRes = 0.0f;
-            dualRes = 0.0f;
-            AxNorm = 0.0f;
-            AyNorm = 0.0f;
-            BzNorm = 0.0f;
-            lagrangePenalty = 0.0f;
-            augmentedLagrangePenalty = 0.0f;
+            if (iteration <= 1) {
+                int[] variableIndexes = new int[5];
+                for (ADMMObjectiveTerm term: termStore) {
+                    if (term instanceof LinearConstraintTerm) {
+                        continue;
+                    }
+                    if (term.size() > variableIndexes.length) {
+                        variableIndexes = new int[term.size()];
+                    }
+                    for (int i = 0; i < term.size(); i++) {
+                        variableIndexes[i] = term.getVariables()[i].getGlobalId();
+                    }
+                    boolean squared = (term instanceof SquaredHingeLossTerm || term instanceof SquaredLinearLossTerm);
+                    boolean hinge = (term instanceof HingeLossTerm || term instanceof SquaredHingeLossTerm);
+                    SGDObjectiveTerm sgdTerm = new SGDObjectiveTerm(term.size(), term.getCoefficients(), term.getConstant(),
+                            variableIndexes, squared, hinge, termStore.getWeight(term.getRuleIndex()), 1.0f);
+                    sgdTerm.minimize(1, termStore.getConsensusValues());
+                }
 
-            // Minimize all the terms.
-            Parallel.count(numTermBlocks, new TermWorker(termStore, termBlockSize));
+            } else {
+                // Zero out the iteration variables.
+                primalRes = 0.0f;
+                dualRes = 0.0f;
+                AxNorm = 0.0f;
+                AyNorm = 0.0f;
+                BzNorm = 0.0f;
+                lagrangePenalty = 0.0f;
+                augmentedLagrangePenalty = 0.0f;
 
-            // Compute new consensus values and residuals.
-            Parallel.count(numVariableBlocks, new VariableWorker(termStore, variableBlockSize));
+                // Minimize all the terms.
+                Parallel.count(numTermBlocks, new TermWorker(termStore, termBlockSize));
+
+                // Compute new consensus values and residuals.
+                Parallel.count(numVariableBlocks, new VariableWorker(termStore, variableBlockSize));
+            }
 
             primalRes = (float)Math.sqrt(primalRes);
             dualRes = (float)(stepSize * Math.sqrt(dualRes));
@@ -162,9 +181,9 @@ public class ADMMReasoner extends Reasoner {
                     objective = computeObjective(termStore, false);
 
                     log.trace(
-                            "Iteration {} -- Objective: {}, Feasible: {}, Primal: {}, Dual: {}, Epsilon Primal: {}, Epsilon Dual: {}.",
+                            "Iteration {} -- Objective: {}, Feasible: {}, Primal: {}, Dual: {}, Epsilon Primal: {}, Epsilon Dual: {}, old obj: {}.",
                             iteration, objective.objective, (objective.violatedConstraints == 0),
-                            primalRes, dualRes, epsilonPrimal, epsilonDual);
+                            primalRes, dualRes, epsilonPrimal, epsilonDual, oldObjective.objective);
                 }
 
                 termStore.iterationComplete();
@@ -207,7 +226,7 @@ public class ADMMReasoner extends Reasoner {
         }
 
         // Break if we have converged.
-        if (iteration > 1 && primalRes < epsilonPrimal && dualRes < epsilonDual) {
+        if (iteration > 2 && primalRes < epsilonPrimal && dualRes < epsilonDual) {
             return true;
         }
 

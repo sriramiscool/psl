@@ -21,7 +21,7 @@ import org.linqs.psl.database.Database;
 import org.linqs.psl.grounding.GroundRuleStore;
 import org.linqs.psl.model.rule.Rule;
 import org.linqs.psl.reasoner.Reasoner;
-import org.linqs.psl.reasoner.admm.ADMMStreamingReasoner;
+import org.linqs.psl.reasoner.admm.SGDADMMStreamingReasoner;
 import org.linqs.psl.reasoner.admm.term.ADMMStreamingTermStore;
 import org.linqs.psl.reasoner.term.TermGenerator;
 import org.linqs.psl.reasoner.term.TermStore;
@@ -38,7 +38,7 @@ public class ADMMStreamingInference extends MPEInference {
 
     @Override
     protected Reasoner createReasoner() {
-        return new ADMMStreamingReasoner();
+        return new SGDADMMStreamingReasoner();
     }
 
     @Override

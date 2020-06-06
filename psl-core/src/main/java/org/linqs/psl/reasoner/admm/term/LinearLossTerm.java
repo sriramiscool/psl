@@ -19,7 +19,6 @@ package org.linqs.psl.reasoner.admm.term;
 
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.TermStore;
-import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
 
@@ -28,15 +27,16 @@ import java.nio.ByteBuffer;
  * weight * coefficients^T * x
  */
 public class LinearLossTerm extends ADMMObjectiveTerm {
-    private float[] coefficients;
-
     /**
      * Caller releases control of |variables| and |coefficients|.
      */
     LinearLossTerm(Hyperplane<LocalVariable> hyperplane, int ruleIndex) {
         super(hyperplane, ruleIndex);
+    }
 
-        this.coefficients = hyperplane.getCoefficients();
+    @Override
+    public float getConstant() {
+        return 0;
     }
 
     @Override
@@ -81,35 +81,17 @@ public class LinearLossTerm extends ADMMObjectiveTerm {
 
     @Override
     public int fixedByteSize() {
-        int bitSize = super.fixedByteSize();
-        for (int i = 0; i < size; i++){
-            bitSize += Float.SIZE / 8; // coefficient
-        }
-
-        return bitSize;
+        return super.fixedByteSize();
     }
 
     @Override
     public void writeFixedValues(ByteBuffer fixedBuffer){
         super.writeFixedValues(fixedBuffer);
-
-        for (int i = 0; i < size; i++) {
-            fixedBuffer.putFloat(coefficients[i]);
-        }
     }
 
     @Override
     public void read(ByteBuffer fixedBuffer, ByteBuffer volatileBuffer){
         super.read(fixedBuffer, volatileBuffer);
-
-        // Make sure that there is enough room for all.
-        if (coefficients.length < size) {
-            coefficients = new float[size];
-        }
-
-        for (int i = 0; i < size; i++) {
-            coefficients[i] = fixedBuffer.getFloat();
-        }
     }
 
 
@@ -120,12 +102,6 @@ public class LinearLossTerm extends ADMMObjectiveTerm {
         }
         if (!(o instanceof LinearLossTerm)){
             return false;
-        }
-        LinearLossTerm oth = (LinearLossTerm) o;
-        for (int i = 0; i < size ; i++){
-            if (!MathUtils.equals(coefficients[i], oth.coefficients[i])){
-                return false;
-            }
         }
         return true;
     }

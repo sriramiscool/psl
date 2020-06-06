@@ -21,7 +21,6 @@ import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.TermStore;
 import org.linqs.psl.util.FloatMatrix;
 import org.linqs.psl.util.HashCode;
-import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -36,7 +35,6 @@ import java.util.concurrent.Semaphore;
  * and minimizes with the weighted, squared hyperplane in the objective.
  */
 public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
-    protected float[] coefficients;
     protected float constant;
 
     /**
@@ -55,7 +53,6 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
     public SquaredHyperplaneTerm(Hyperplane<LocalVariable> hyperplane, int ruleIndex) {
         super(hyperplane, ruleIndex);
 
-        this.coefficients = hyperplane.getCoefficients();
         this.constant = hyperplane.getConstant();
 
         lowerTriangle = null;
@@ -120,6 +117,11 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
         lowerTriangleCache.put(hash, matrix);
 
         return matrix;
+    }
+
+
+    public float getConstant() {
+        return constant;
     }
 
     /**
@@ -224,10 +226,6 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
     public int fixedByteSize() {
         int bitSize = super.fixedByteSize();
         bitSize += Float.SIZE / 8; //constant
-        for (int i = 0; i < size; i++){
-            bitSize += Float.SIZE / 8; // coefficient
-        }
-
         return bitSize;
     }
 
@@ -235,10 +233,6 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
     public void writeFixedValues(ByteBuffer fixedBuffer){
         super.writeFixedValues(fixedBuffer);
         fixedBuffer.putFloat(constant);
-
-        for (int i = 0; i < size; i++) {
-            fixedBuffer.putFloat(coefficients[i]);
-        }
     }
 
     @Override
@@ -246,14 +240,6 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
         super.read(fixedBuffer, volatileBuffer);
         constant = fixedBuffer.getFloat();
 
-        // Make sure that there is enough room for all.
-        if (coefficients.length < size) {
-            coefficients = new float[size];
-        }
-
-        for (int i = 0; i < size; i++) {
-            coefficients[i] = fixedBuffer.getFloat();
-        }
         lowerTriangle = null;
     }
 
@@ -273,11 +259,12 @@ public abstract class SquaredHyperplaneTerm extends ADMMObjectiveTerm {
         if (oth.lowerTriangle != null && lowerTriangle == null) {
             return false;
         }
-        for (int i = 0; i < size ; i++){
-            if (!MathUtils.equals(coefficients[i], oth.coefficients[i])){
-                return false;
-            }
-        }
         return true;
+    }
+
+    @Override
+    public String toString(){
+        String out = super.toString() + ", Constant: " + constant;
+        return out;
     }
 }

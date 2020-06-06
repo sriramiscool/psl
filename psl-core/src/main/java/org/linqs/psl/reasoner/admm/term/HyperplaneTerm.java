@@ -32,7 +32,6 @@ import java.nio.ByteBuffer;
  * All coefficients must be non-zero.
  */
 public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
-    protected float[] coefficients;
     protected float[] unitNormal;
     protected float constant;
     // Only allocate once.
@@ -41,7 +40,6 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
     public HyperplaneTerm(Hyperplane<LocalVariable> hyperplane, int ruleIndex) {
         super(hyperplane, ruleIndex);
 
-        this.coefficients = hyperplane.getCoefficients();
         this.constant = hyperplane.getConstant();
         this.point = new float[size];
 
@@ -60,6 +58,10 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
         } else {
             unitNormal = null;
         }
+    }
+
+    public float getConstant() {
+        return constant;
     }
 
     /**
@@ -138,9 +140,6 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
     public int fixedByteSize() {
         int bitSize = super.fixedByteSize();
         bitSize += Float.SIZE / 8; //constant
-        for (int i = 0; i < size; i++){
-            bitSize += Float.SIZE / 8; // coefficient
-        }
 
         return bitSize;
     }
@@ -149,10 +148,6 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
     public void writeFixedValues(ByteBuffer fixedBuffer){
         super.writeFixedValues(fixedBuffer);
         fixedBuffer.putFloat(constant);
-
-        for (int i = 0; i < size; i++) {
-            fixedBuffer.putFloat(coefficients[i]);
-        }
     }
 
     @Override
@@ -164,15 +159,8 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
         if (point.length < size) {
             point = new float[size];
         }
-        if (coefficients.length < size) {
-            coefficients = new float[size];
-        }
         if (unitNormal ==null || unitNormal.length < size) {
             unitNormal = new float[size];
-        }
-
-        for (int i = 0; i < size; i++) {
-            coefficients[i] = fixedBuffer.getFloat();
         }
 
         if (size >= 3) {
@@ -202,12 +190,17 @@ public abstract class HyperplaneTerm extends ADMMObjectiveTerm {
             return false;
         }
         for (int i = 0; i < size ; i++){
-            if (!MathUtils.equals(coefficients[i], oth.coefficients[i]) ||
-                    !MathUtils.equals(point[i], oth.point[i]) ||
+            if (!MathUtils.equals(point[i], oth.point[i]) ||
                     (size > 3 && !MathUtils.equals(unitNormal[i], oth.unitNormal[i]))){
                 return false;
             }
         }
         return true;
+    }
+
+    @Override
+    public String toString(){
+        String out = super.toString() + ", Constant: " + constant;
+        return out;
     }
 }

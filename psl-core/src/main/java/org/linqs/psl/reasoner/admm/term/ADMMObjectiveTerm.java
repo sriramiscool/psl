@@ -20,6 +20,7 @@ package org.linqs.psl.reasoner.admm.term;
 import org.linqs.psl.reasoner.term.Hyperplane;
 import org.linqs.psl.reasoner.term.ReasonerTerm;
 import org.linqs.psl.reasoner.term.TermStore;
+import org.linqs.psl.util.MathUtils;
 
 import java.nio.ByteBuffer;
 
@@ -31,11 +32,14 @@ public abstract class ADMMObjectiveTerm implements ReasonerTerm {
     protected int ruleIndex;
     protected LocalVariable[] variables;
     protected int size;
+    protected float[] coefficients;
+
 
     /**
      * Caller releases control of the hyperplane and all members of it.
      */
     public ADMMObjectiveTerm(Hyperplane<LocalVariable> hyperplane, int ruleIndex) {
+        this.coefficients = hyperplane.getCoefficients();
         this.variables = hyperplane.getVariables();
         this.size = hyperplane.size();
         this.ruleIndex = ruleIndex;
@@ -49,6 +53,20 @@ public abstract class ADMMObjectiveTerm implements ReasonerTerm {
             variable.setLagrange(variable.getLagrange() + stepSize * (variable.getValue() - consensusValues[variable.getGlobalId()]));
         }
     }
+
+    public float[] getCoefficients(){
+        return coefficients;
+    }
+
+    public int getRuleIndex() {
+        return ruleIndex;
+    }
+
+    /**
+     * Can be 0 for linear loss and otherwise the constant.
+     * @return
+     */
+    public abstract float getConstant();
 
     /**
      * Updates x to the solution of <br />
@@ -91,6 +109,9 @@ public abstract class ADMMObjectiveTerm implements ReasonerTerm {
         for (int i = 0; i < size; i++){
             bitSize += variables[i].fixedByteSize();
         }
+        for (int i = 0; i < size; i++){
+            bitSize += Float.SIZE / 8; // coefficient
+        }
 
         return bitSize;
     }
@@ -109,6 +130,10 @@ public abstract class ADMMObjectiveTerm implements ReasonerTerm {
 
         for (int i = 0; i < size; i++) {
             variables[i].writeFixedValues(fixedBuffer);
+        }
+
+        for (int i = 0; i < size; i++) {
+            fixedBuffer.putFloat(coefficients[i]);
         }
     }
 
@@ -133,6 +158,13 @@ public abstract class ADMMObjectiveTerm implements ReasonerTerm {
             }
             variables[i].read(fixedBuffer, volatileBuffer);
         }
+
+        if (coefficients.length < size) {
+            coefficients = new float[size];
+        }
+        for (int i = 0; i < size; i++) {
+            coefficients[i] = fixedBuffer.getFloat();
+        }
     }
 
     @Override
@@ -149,6 +181,26 @@ public abstract class ADMMObjectiveTerm implements ReasonerTerm {
                 return false;
             }
         }
+        for (int i = 0; i < size ; i++){
+            if (!MathUtils.equals(coefficients[i], oth.coefficients[i])){
+                return false;
+            }
+        }
         return true;
+    }
+
+    @Override
+    public String toString(){
+        String out = "Size: " + size;
+        out += ", Coefficients: ";
+        for (int i = 0; i < size; i++) {
+            out += coefficients[i] + ", ";
+        }
+        out += "Local variables: ";
+        for (int i = 0; i < size; i++) {
+            out += variables[i].toString() + ", ";
+        }
+        out += "ruleIndex: " + ruleIndex;
+        return out;
     }
 }
