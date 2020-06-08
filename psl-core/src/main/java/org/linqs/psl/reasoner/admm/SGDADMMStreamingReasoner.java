@@ -84,9 +84,10 @@ public class SGDADMMStreamingReasoner extends Reasoner {
         int iteration = 1;
         long timeSoFar = 0;
         while (true) {
-            if (iteration <= 0){
+            if (iteration <= 1){
                 int[] variableIndexes = new int[5];
-                printVars(termStore.getVariableValues(), termStore.getNumVariables());
+                //printVars(termStore.getVariableValues(), termStore.getNumVariables());
+                long start = System.currentTimeMillis();
                 for (ADMMObjectiveTerm term: termStore){
                     if (term instanceof LinearConstraintTerm) {
                         continue;
@@ -100,11 +101,17 @@ public class SGDADMMStreamingReasoner extends Reasoner {
                     boolean squared = (term instanceof SquaredHingeLossTerm || term instanceof SquaredLinearLossTerm);
                     boolean hinge = (term instanceof HingeLossTerm || term instanceof SquaredHingeLossTerm);
                     SGDObjectiveTerm sgdTerm = new SGDObjectiveTerm(term.size(), term.getCoefficients(), term.getConstant(),
-                            variableIndexes, squared, hinge, termStore.getWeight(term.getRuleIndex()), 0.1f);
+                            variableIndexes, squared, hinge, termStore.getWeight(term.getRuleIndex()), 1.0f);
                     sgdTerm.minimize(1, termStore.getVariableValues());
                     //System.out.println(term);
                 }
-                printVars(termStore.getVariableValues(), termStore.getNumVariables());
+                for (ADMMObjectiveTerm term: termStore){
+                    term.resetLocalVariables(termStore.getVariableValues());
+                }
+                long end = System.currentTimeMillis();
+                timeSoFar += end - start;
+
+                //printVars(termStore.getVariableValues(), termStore.getNumVariables());
             } else {
                 //Create once, Assuming termstore has finished first round so numbers are proper.
                 if (varCount == null) {
@@ -112,28 +119,28 @@ public class SGDADMMStreamingReasoner extends Reasoner {
                     computeConsensus = new float[NUM_THREADS][termStore.getNumVariables()];
                     computeConsensusCount = new int[NUM_THREADS][termStore.getNumVariables()];
                 }
-                printVars(termStore.getVariableValues(), termStore.getNumVariables());
+                //printVars(termStore.getVariableValues(), termStore.getNumVariables());
                 long start = System.currentTimeMillis();
                 termIterator = termStore.iterator();
 
                 // Minimize all the terms.
                 Parallel.count(NUM_THREADS,
                         new TermWorker(termStore, termIterator));
-                long end = System.currentTimeMillis();
                 updateConsensusVariables(termStore);
-                printVars(termStore.getVariableValues(), termStore.getNumVariables());
+                long end = System.currentTimeMillis();
+                //printVars(termStore.getVariableValues(), termStore.getNumVariables());
                 timeSoFar += end - start;
             }
 
-                oldObjective = objective;
-                objective = computeObjective(termStore, false);
-                if (iteration % computePeriod == 0) {
-                        log.trace(
-                                "Iteration {} -- Objective: {}, Old objective: {}, Feasible: {}, Time: {}, Vars: {}.",
-                                iteration, objective.objective, (oldObjective==null? "NAN":oldObjective.objective),
-                                (objective.violatedConstraints == 0), timeSoFar, objective.numTerms);
+            oldObjective = objective;
+            objective = computeObjective(termStore, false);
+            if (iteration % computePeriod == 0) {
+                    log.trace(
+                            "Iteration {} -- Objective: {}, Old objective: {}, Feasible: {}, Time: {}.",
+                            iteration, objective.objective, (oldObjective==null? "NAN":oldObjective.objective),
+                            (objective.violatedConstraints == 0), timeSoFar);
 
-                }
+            }
             termStore.iterationComplete();
 
             iteration++;

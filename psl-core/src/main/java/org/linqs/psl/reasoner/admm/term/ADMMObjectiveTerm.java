@@ -54,6 +54,13 @@ public abstract class ADMMObjectiveTerm implements ReasonerTerm {
         }
     }
 
+    public void resetLocalVariables(float[] consensusValues) {
+        for (int i = 0; i < size; i++) {
+            LocalVariable variable = variables[i];
+            variable.setValue(consensusValues[variable.getGlobalId()]);
+        }
+    }
+
     public float[] getCoefficients(){
         return coefficients;
     }
